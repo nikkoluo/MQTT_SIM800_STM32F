@@ -17,6 +17,13 @@ int main(void)
 {
   while(1)
   {
-  
+
   }
+}
+
+void init_USART(void)
+{
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA )//find correct port
 }
