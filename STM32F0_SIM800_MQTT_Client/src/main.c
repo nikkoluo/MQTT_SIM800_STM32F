@@ -27,7 +27,7 @@ void init_USART(void)
 	 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
 	 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
-	 	GPIO_InitTypeDef GPIO_InitStruct
+	 	GPIO_InitTypeDef* GPIO_InitStruct
 	 	{
 	 		GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10;
 	 		GPIO_Mode = GPIO_Mode_AF;
@@ -36,6 +36,18 @@ void init_USART(void)
 	 		GPIO_PuPd = GPIO_PuPd_UP; 
 	 	}
 	 	GPIO_Init(GPIO_InitStruct);
-	 	
+	 	USART_InitTypeDef* USART_InitStruct
+	 	{
+	 		USART_BaudRate =  9600;//Add baud rate
+	 		USART_WordLength = USART_WordLength_8b;
+	 		USART_StopBits = USART_StopBits_1;
+	 		USART_Parity = USART_Parity_Even;
+	 		USART_Mode = USART_Mode_Tx|USART_Mode_Rx;
+	 		USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	 	}
+	 	USART_Init(USART1, USART_InitStruct);
+	 	USART_ITConfig();
+	 	USART_Cmd();
+
 
 }
