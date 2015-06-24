@@ -16,9 +16,9 @@
 #include <string.h>
 
 
-#define LINEMAX 20
+#define LINEMAX 50
 uint8_t writeflag=0;
-char receivedString[20];
+char receivedString[50];
 int main(void)
 {
 
@@ -29,13 +29,38 @@ int main(void)
     LCD5110_write_string("Online:");
 
     init_USART();
-    char greeting[] = "Online:";
-    USART_SendString(greeting,7);
+    init_GPIO();
+
+    uint8_t Switch0, Switch1;
+    char greeting[] = "AT";
+    USART_SendString(greeting);
     while(1)
     {
+        Switch0 = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
+        if (Switch0 == 0)
+        {
+            LCD5110_LCD_delay_ms(200);
+            //LCD5110_clear();
+            //LCD5110_set_XY(0,0);
+            //LCD5110_write_string("Pressed!");
+            SIM_sendAT();
+            //USART_SendString("ATD0722552972;");
+        }
+        Switch1 = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1);
+        if (Switch1 == 0)
+        {
+            LCD5110_LCD_delay_ms(200);
+            //LCD5110_clear();
+            //LCD5110_set_XY(0,0);
+            //LCD5110_write_string("Pressed!");
+            SIM_Hangup();
+            //USART_SendString("ATD0722552972;");
+        }
         if (writeflag==1)
         {
-
+            LCD5110_clear();
+            LCD5110_set_XY(0,0);
+            LCD5110_write_string(receivedString);
             writeflag=0;
         }
     }
@@ -79,12 +104,14 @@ void USART_SendString(char StringToSend[], int index)
 {
     uint16_t Length = strlen(StringToSend);
     uint16_t i;
-    for (i=0; i<index; i++ )
+    for (i=0; i<Length; i++ )
     {
         USART_SendData(USART1, StringToSend[i]);
         while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
     }
-    USART_SendData(USART1,0xA);
+    USART_SendData(USART1,0x0D);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    USART_SendData(USART1,0x0A);
     while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
 }
 void USART_ReceiveString(void)
@@ -106,6 +133,97 @@ void USART_ReceiveString(void)
 //must stop this function from always running
     //LCD5110_write_string(receivedString);
 }
+void init_GPIO(void)
+{
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+    GPIO_InitTypeDef  GPIO_InitStruct;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+ void SIM_sendAT(void)
+{
+//atd0722552972;    41 54 44 30 37 32 35 35 32 39 37 32 3b
+    USART_SendData(USART1, 0x41);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x54);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x44);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x30);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x37);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x32);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x32);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x35);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+     Delay(10);
+     USART_SendData(USART1, 0x35);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x32);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x39);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x37);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x32);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x3b);
+
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x0d);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+ //   USART_SendData(USART1, 0x0A);
+ //   while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+}
+void SIM_Hangup(void)
+{
+//atd0722552972;    41 54 44 30 37 32 35 35 32 39 37 32 3b
+    USART_SendData(USART1, 0x41);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x54);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x48);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    Delay(10);
+    USART_SendData(USART1, 0x0d);
+    while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+}
+void Delay(__IO uint32_t nCount) //in millisecond
+{
+	nCount = nCount * 5940 *2;//381;
+	while(nCount--)
+	{
+	}
+}
+
 void USART1_IRQHandler (void)
 {
   static char rx_buffer[LINEMAX];   // Local holding buffer to build line
@@ -115,12 +233,15 @@ void USART1_IRQHandler (void)
   {
 	char rx =  USART_ReceiveData(USART1);
 
-	if ((rx == '\r') || (rx == '\n')) // Is this an end-of-line condition, either will suffice?
+	if (!USART_GetFlagStatus(USART1, USART_FLAG_RXNE))//(rx == '\r') || (rx == '\n')) // Is this an end-of-line condition, either will suffice?
 	{
 		//if (rx_index != 0) // Line has some content?
 		{
-			USART_SendString(rx_buffer, rx_index);
+			//USART_SendString(rx_buffer, rx_index);
+			strcpy(receivedString , rx_buffer);
+			memset(rx_buffer,0,strlen(rx_buffer));
 			rx_index = 0;
+			writeflag=1;
 			USART_ClearITPendingBit(USART1, USART_IT_RXNE);
 		}
 	}

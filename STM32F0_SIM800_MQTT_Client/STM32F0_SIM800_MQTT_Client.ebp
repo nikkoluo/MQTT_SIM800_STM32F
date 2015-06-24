@@ -172,6 +172,7 @@
 		<Unit filename="inc\stm32f0xx.h" />
 		<Unit filename="inc\stm32f0xx_conf.h" />
 		<Unit filename="inc\system_stm32f0xx.h" />
+		<Unit filename="inc\umqtt.h" />
 		<Unit filename="readme.txt" />
 		<Unit filename="src\5110.c">
 			<Option compilerVar="CC" />
@@ -183,6 +184,9 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src\system_stm32f0xx.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src\umqtt.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="stm32f051c6_flash.ld" />
