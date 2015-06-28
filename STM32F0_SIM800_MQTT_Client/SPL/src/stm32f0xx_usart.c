@@ -948,7 +948,7 @@ uint16_t USART_ReceiveData(USART_TypeDef* USARTx)
              Mode transmitter or Mode receiver and hardware flow control values
              using the USART_Init() function.
          (#) Configures the USART address using the USART_SetAddress() function.
-         (#) Configures the wake up methode (USART_WakeUp_IdleLine or
+         (#) Configures the wake up methode (USART_WakeUp_Line or
              USART_WakeUp_AddressMark) using USART_WakeUpConfig() function only
              for the slaves.
          (#) Enable the USART using the USART_Cmd() function.

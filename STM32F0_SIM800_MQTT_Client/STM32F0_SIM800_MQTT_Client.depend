@@ -184,7 +184,7 @@
 	"stm32f0xx_tim.h"
 	"stm32f0xx_rcc.h"
 
-1434740139 source:c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\spl\src\stm32f0xx_usart.c
+1435489745 source:c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\spl\src\stm32f0xx_usart.c
 	"stm32f0xx_usart.h"
 	"stm32f0xx_rcc.h"
 
@@ -206,7 +206,7 @@
 
 1353449320 c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\font.h
 
-1434744449 source:c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\main.c
+1435490543 source:c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\main.c
 	"stm32f0xx_conf.h"
 	<stdio.h>
 	<string.h>
@@ -422,4 +422,11 @@
 	"stm32f0xx_conf.h"
 	<stdio.h>
 	<string.h>
+
+1435253428 source:c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\umqtt.c
+	<string.h>
+	"umqtt.h"
+
+1435253205 c:\users\brandon desktop\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\umqtt.h
+	<stdint.h>
 
