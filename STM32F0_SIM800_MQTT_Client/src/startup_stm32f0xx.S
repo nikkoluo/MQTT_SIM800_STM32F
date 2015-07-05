@@ -118,8 +118,8 @@ __isr_vector:
     .long    USART3_4_IRQHandler            // Not all devices!!
     .long    CEC_IRQHandler                 // CEC
     .long    USB_IRQHandler                 // Not all devices!!
-	.long    BootRAM                        // @0x108. This is for boot in RAM mode for 
-                                            // STM32F0xx devices. 
+	.long    BootRAM                        // @0x108. This is for boot in RAM mode for
+                                            // STM32F0xx devices.
 
     .size    __isr_vector, . - __isr_vector
 

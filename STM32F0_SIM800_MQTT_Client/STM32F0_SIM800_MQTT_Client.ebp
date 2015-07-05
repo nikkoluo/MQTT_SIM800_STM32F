@@ -168,6 +168,9 @@
 		<Unit filename="cmsis\core_cmFunc.h" />
 		<Unit filename="cmsis\core_cmInstr.h" />
 		<Unit filename="inc\5110.h" />
+		<Unit filename="inc\SIMcommands.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="inc\font.h" />
 		<Unit filename="inc\stm32f0xx.h" />
 		<Unit filename="inc\stm32f0xx_conf.h" />
@@ -176,6 +179,10 @@
 		<Unit filename="readme.txt" />
 		<Unit filename="src\5110.c">
 			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src\SIMcommands.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="src\main.c">
 			<Option compilerVar="CC" />

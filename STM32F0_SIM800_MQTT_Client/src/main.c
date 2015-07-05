@@ -14,12 +14,12 @@
 #include "stm32f0xx_conf.h"
 #include <stdio.h>
 #include <string.h>
-
+#include "umqtt.h"
 
 #define LINEMAX 50
 uint8_t writeflag=0;
-char receivedString[50];
-unsigned char receivedStringLen;
+char receivedString[50], receivedDebug[50];
+unsigned char receivedStringLen, receivedDebugLen;
 int main(void)
 {
 
@@ -27,40 +27,37 @@ int main(void)
 ////initialise
     LCD5110_init();
     LCD5110_clear();
-    LCD5110_write_string("Online:");
 
     init_USART();
     init_GPIO();
-
+    //Init_SIM();
     uint8_t Switch0, Switch1, i;
-    char greeting[20];
-    for (i=0; i<2; i++)
-        greeting[i] = "AT"[i];
-    USART_SendString(greeting);
     while(1)
     {
         Switch0 = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
         if (Switch0 == 0)
         {
             LCD5110_LCD_delay_ms(200);
+            SIM_Connection();
             //USART_SendString("ATD0722552972;");
-            LCD5110_clear();
-            LCD5110_set_XY(0,0);
 
         }
+
         Switch1 = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1);
         if (Switch1 == 0)
         {
             LCD5110_LCD_delay_ms(200);
-            SIM_Hangup();
+            USART_SendString("ATH");
 
 
         }
-        if (writeflag)
+        if ((USART_GetFlagStatus(USART2, USART_FLAG_IDLE))&&(receivedStringLen>1))
         {
-            LCD5110_write_string(receivedString);
+            //LCD5110_write_string(receivedString);
+            Delay(1);
+            DEBUG_Send(receivedString);
             writeflag=0;
-            for(i=0; i<30; i++) receivedString[i]=0;//flush buffer
+            for(i=0; i<50; i++) receivedString[i]=0;//flush buffer
             receivedStringLen=0;
         }
     }
@@ -85,7 +82,7 @@ void init_USART(void)
 
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 0x0F;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = DISABLE;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
 
@@ -113,12 +110,82 @@ void init_USART(void)
         USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 
     USART_Init(USART1, &USART_InitStruct);
-    //USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART1, ENABLE);
-
+    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_Init(USART2, &USART_InitStruct);
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART2, ENABLE);
+}
+
+void Init_SIM(void)
+{
+    USART_SendString("AT+CSQ");
+    Delay(2);
+    if(strstr(receivedString, "OK") != NULL) {
+        flushReceiveBuffer();
+        DEBUG_Send("DONE CSQ--");
+        USART_SendString("AT+CGATT?");
+        Delay(2);
+        while(strstr(receivedString, "1") == NULL)
+        {
+            flushReceiveBuffer();
+            Delay(2);
+            USART_SendString("AT+CGATT=1");
+        }
+        if(strstr(receivedString, "1") != NULL) {
+            flushReceiveBuffer();
+            DEBUG_Send("DONE ATT--");
+            Delay(2);
+        }
+    }
+}
+void SIM_Connection(void)
+{
+    char timeoutCount=0;
+    char connString[50];
+
+    while(timeoutCount<5)
+    {
+        flushReceiveBuffer();
+        USART_SendString("AT+CIPSHUT");
+        Delay(15);
+        DEBUG_Send(receivedString);
+        if(strstr(receivedString, "SHUT OK") != NULL) {
+            timeoutCount=10;
+        }
+        else timeoutCount++;
+    }
+    timeoutCount=0;
+    strcpy(connString, "AT+CIPSTART= TCP , m11.cloudmqtt.com , 14672 ");
+    connString[12]=0x22;
+    connString[16]=0x22;
+    connString[18]=0x22;
+    connString[36]=0x22;
+    connString[38]=0x22;
+    connString[44]=0x22;
+    while(timeoutCount<5)
+    {
+        flushReceiveBuffer();
+        USART_SendString(connString);
+        Delay(100);
+        DEBUG_Send(receivedString);
+        if((strstr(receivedString, "CONNECT OK") != NULL)||(strstr(receivedString, "ALREADY CONNECT") != NULL) ){
+            timeoutCount=10;
+        }
+        else timeoutCount++;
+    }
+    timeoutCount=0;
+    while(timeoutCount<5)
+    {
+        flushReceiveBuffer();
+        USART_SendString("AT+CIPSTATUS");
+        Delay(300);
+        if(strstr(receivedString, "CONNECT OK") != NULL) {
+            timeoutCount=10;
+        }
+        else timeoutCount++;
+    }
 }
 
 void USART_SendString(char StringToSend[], int index)
@@ -130,10 +197,15 @@ void USART_SendString(char StringToSend[], int index)
         USART_SendData(USART2, StringToSend[i]);
         while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
     }
-    USART_SendData(USART2,0x0D);
+    USART_SendData(USART2,0x0D);//end the message
     while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
 }
-
+void flushReceiveBuffer(void)
+{
+    uint16_t i;
+    for(i=0; i<50; i++) receivedString[i]=0;//flush buffer
+    receivedStringLen=0;
+}
 void init_GPIO(void)
 {
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
@@ -145,81 +217,7 @@ void init_GPIO(void)
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
- void SIM_AT(void)
-{
-    USART_SendData(USART2, 0x41);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x54);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x0d);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
 
-}
- void SIM_Call(void)
-{
-//atd0722552972;    41 54 44 30 37 32 35 35 32 39 37 32 3b
-    USART_SendData(USART2, 0x41);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x54);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x44);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x30);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x37);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    USART_SendData(USART2, 0x32);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x32);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x35);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-     USART_SendData(USART2, 0x35);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x32);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x39);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x37);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x32);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x3b);
-
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x0d);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-}
-void SIM_Hangup(void)
-{
-    USART_SendData(USART2, 0x41);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x54);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x48);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-
-    USART_SendData(USART2, 0x0d);
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-}
 void Delay(__IO uint32_t nCount) //in millisecond
 {
 	nCount = nCount * 5940 *2;//381;
@@ -228,69 +226,33 @@ void Delay(__IO uint32_t nCount) //in millisecond
 	}
 }
 
-/*void USART1_IRQHandler (void)
-{
-  static char rx_buffer[LINEMAX];   // Local holding buffer to build line
-  static int rx_index = 0;
-
-  if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // Received character?
-  {
-	char rx =  USART_ReceiveData(USART1);
-
-	if (!USART_GetFlagStatus(USART1, USART_FLAG_RXNE))//(rx == '\r') || (rx == '\n')) // Is this an end-of-line condition, either will suffice?
-	{
-		//if (rx_index != 0) // Line has some content?
-		{
-			//USART_SendString(rx_buffer, rx_index);
-			strcpy(receivedString , rx_buffer);
-			memset(rx_buffer,0,strlen(rx_buffer));
-			rx_index = 0;
-			writeflag=1;
-			USART_ClearITPendingBit(USART1, USART_IT_RXNE);
-		}
-	}
-	else
-	{
-		if (rx_index == LINEMAX) // If overflows pull back to start
-			rx_index = 0;
-
-		  rx_buffer[rx_index++] = rx; // Copy to buffer and increment
-	}
-  }
-
-}*/
 
 void USART2_IRQHandler (void)
 {
-    //static char rx_buffer[LINEMAX];   // Local holding buffer to build line
-    //static int rx_index = 0;
     if(USART_GetITStatus(USART2, USART_IT_RXNE)!= RESET)
     {
         receivedString[receivedStringLen++] = USART_ReceiveData(USART2);
         if(receivedString[receivedStringLen-1]==0x0d) writeflag=1;
-        //if (rx_index>=19) rx_index=0;
     }
 
-    /*if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) // Received character?
+}
+void USART1_IRQHandler (void)
+{
+    if(USART_GetITStatus(USART1, USART_IT_RXNE)!= RESET)
     {
-        char rx =  USART_ReceiveData(USART2);
-        if (!USART_GetFlagStatus(USART2, USART_FLAG_RXNE))//(rx == '\r') || (rx == '\n')) // Is this an end-of-line condition, either will suffice?
-        {
-            {
-                strcpy(receivedString , rx_buffer);
-                memset(rx_buffer,0,strlen(rx_buffer));
-                rx_index = 0;
-                writeflag=1;
-                USART_ClearITPendingBit(USART2, USART_IT_RXNE);
-            }
-        }
-        else
-        {
-            if (rx_index == LINEMAX) // If overflows pull back to start
-                rx_index = 0;
+        receivedDebug[receivedDebugLen++] = USART_ReceiveData(USART1);
+        if(receivedDebug[receivedDebugLen-1]==0x0d) DEBUG_Send("Ok");
+    }
 
-              rx_buffer[rx_index++] = rx; // Copy to buffer and increment
-        }
+}
 
-    }*/
+void DEBUG_Send(char StringToSend[])
+{
+    uint16_t Length = strlen(StringToSend);
+    uint16_t i;
+    for (i=0; i<Length; i++ )
+    {
+        USART_SendData(USART1, StringToSend[i]);
+        while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    }
 }
