@@ -15,40 +15,37 @@
 #include <stdio.h>
 #include <string.h>
 #include "umqtt.h"
+#include "config.h"
+#include "Debug.h"
+#include "SIM808.h"
 
 #define LINEMAX 50
 uint8_t writeflag=0;
-char receivedString[50], receivedDebug[50];
-unsigned char receivedStringLen, receivedDebugLen;
+
+
 int main(void)
 {
-
-
 ////initialise
     LCD5110_init();
     LCD5110_clear();
 
-    init_USART();
-    init_GPIO();
-    //Init_SIM();
-    uint8_t Switch0, Switch1, i;
+    //init_USART();
+    init_DebugUSART();
+    init_SIMUSART();
+
+    uint8_t  i;
+    DEBUG_Send("hello world");
     while(1)
     {
-        Switch0 = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_0);
-        if (Switch0 == 0)
+        if(strstr(receivedDebug, "X_conn") != NULL)
         {
-            LCD5110_LCD_delay_ms(200);
             SIM_Connection();
-            //USART_SendString("ATD0722552972;");
-
+            flushDEBUGBuffer();
         }
-
-        Switch1 = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_1);
-        if (Switch1 == 0)
+        if(strstr(receivedDebug, "X_mqttcon") != NULL)
         {
-            LCD5110_LCD_delay_ms(200);
-            USART_SendString("ATH");
-
+            DEBUG_Send("hello");
+            flushDEBUGBuffer();
 
         }
         if ((USART_GetFlagStatus(USART2, USART_FLAG_IDLE))&&(receivedStringLen>1))
@@ -61,19 +58,11 @@ int main(void)
             receivedStringLen=0;
         }
     }
+    return 0;
 }
 
-void init_USART(void)
+/*void init_USART(void)
 {
-
-    /*
-        USART 1
-            TX - PA9
-            RX - PA10
-        USART 2
-            TX - PA2
-            RX - PA3
-    */
     NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 0x0F;
@@ -90,10 +79,12 @@ void init_USART(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX
     GPIO_InitTypeDef GPIO_InitStruct;
         GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_2|GPIO_Pin_3;
         GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
@@ -112,12 +103,12 @@ void init_USART(void)
     USART_Init(USART1, &USART_InitStruct);
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART1, ENABLE);
-    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
     USART_Init(USART2, &USART_InitStruct);
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART2, ENABLE);
 }
-
+*/
 void Init_SIM(void)
 {
     USART_SendString("AT+CSQ");
@@ -157,13 +148,7 @@ void SIM_Connection(void)
         else timeoutCount++;
     }
     timeoutCount=0;
-    strcpy(connString, "AT+CIPSTART= TCP , m11.cloudmqtt.com , 14672 ");
-    connString[12]=0x22;
-    connString[16]=0x22;
-    connString[18]=0x22;
-    connString[36]=0x22;
-    connString[38]=0x22;
-    connString[44]=0x22;
+    strcpy(connString, "AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"");
     while(timeoutCount<5)
     {
         flushReceiveBuffer();
@@ -188,7 +173,32 @@ void SIM_Connection(void)
     }
 }
 
-void USART_SendString(char StringToSend[], int index)
+
+void SimHandler_umqtt_init(struct umqtt_connection *conn)
+{
+	umqtt_init(conn);
+	umqtt_circ_init(&conn->txbuff);
+	umqtt_circ_init(&conn->rxbuff);
+
+	umqtt_connect(conn, MQTT_KEEP_ALIVE, MQTT_CLIENT_ID);
+}
+
+static void handle_message(struct umqtt_connection __attribute__((unused))*conn,
+		char *topic, uint8_t *data, int len)
+{
+	char str[len + 1];
+	unsigned int h;
+	unsigned int m;
+	unsigned int s;
+
+	memcpy(str, data, len);
+
+	str[len] = 0;
+
+}
+
+
+void USART_SendString(char StringToSend[])
 {
     uint16_t Length = strlen(StringToSend);
     uint16_t i;
@@ -206,18 +216,13 @@ void flushReceiveBuffer(void)
     for(i=0; i<50; i++) receivedString[i]=0;//flush buffer
     receivedStringLen=0;
 }
-void init_GPIO(void)
-{
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_InitTypeDef  GPIO_InitStruct;
-    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
-    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1;
-    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
-}
 
+void flushDEBUGBuffer(void)
+{
+    uint16_t i;
+    for(i=0; i<50; i++) receivedDebug[i]=0;//flush buffer
+    receivedDebugLen=0;
+}
 void Delay(__IO uint32_t nCount) //in millisecond
 {
 	nCount = nCount * 5940 *2;//381;
@@ -241,18 +246,15 @@ void USART1_IRQHandler (void)
     if(USART_GetITStatus(USART1, USART_IT_RXNE)!= RESET)
     {
         receivedDebug[receivedDebugLen++] = USART_ReceiveData(USART1);
-        if(receivedDebug[receivedDebugLen-1]==0x0d) DEBUG_Send("Ok");
+        if(receivedDebug[receivedDebugLen-1]==0x0d)
+        {
+            USART_ClearFlag(USART1, USART_FLAG_RXNE);
+            DEBUG_Send("check\n");
+            //USART_SendString("AT");
+            flushDEBUGBuffer();
+        }
     }
 
 }
 
-void DEBUG_Send(char StringToSend[])
-{
-    uint16_t Length = strlen(StringToSend);
-    uint16_t i;
-    for (i=0; i<Length; i++ )
-    {
-        USART_SendData(USART1, StringToSend[i]);
-        while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
-    }
-}
+

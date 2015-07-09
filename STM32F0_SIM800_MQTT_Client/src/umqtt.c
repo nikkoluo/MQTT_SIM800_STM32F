@@ -159,8 +159,7 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid)
 	memcpy(&payload[2], cid, cidlen);
 
 	umqtt_circ_push(&conn->txbuff, &fixed, 1);
-	umqtt_circ_push(&conn->txbuff, remlen,
-			umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
+	umqtt_circ_push(&conn->txbuff, remlen, umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
 	umqtt_circ_push(&conn->txbuff, variable, sizeof(variable));
 	umqtt_circ_push(&conn->txbuff, payload, sizeof(payload));
 
