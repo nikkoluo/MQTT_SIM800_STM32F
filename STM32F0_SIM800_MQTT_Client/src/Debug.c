@@ -10,7 +10,7 @@
 #include "Debug.h"
 #include "stm32f0xx_conf.h"
 
-char receivedDebug[50];
+char receivedDebug[200];
 unsigned char receivedDebugLen;
 
 void init_DebugUSART(void)

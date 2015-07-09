@@ -37,6 +37,11 @@ int main(void)
     DEBUG_Send("hello world");
     while(1)
     {
+         if ( Sim808_connect())
+        {
+             Sim808_receive();
+             Sim808_send();
+         }
         if(strstr(receivedDebug, "X_conn") != NULL)
         {
             SIM_Connection();
@@ -131,91 +136,7 @@ void Init_SIM(void)
         }
     }
 }
-void SIM_Connection(void)
-{
-    char timeoutCount=0;
-    char connString[50];
 
-    while(timeoutCount<5)
-    {
-        flushReceiveBuffer();
-        USART_SendString("AT+CIPSHUT");
-        Delay(15);
-        DEBUG_Send(receivedString);
-        if(strstr(receivedString, "SHUT OK") != NULL) {
-            timeoutCount=10;
-        }
-        else timeoutCount++;
-    }
-    timeoutCount=0;
-    strcpy(connString, "AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"");
-    while(timeoutCount<5)
-    {
-        flushReceiveBuffer();
-        USART_SendString(connString);
-        Delay(100);
-        DEBUG_Send(receivedString);
-        if((strstr(receivedString, "CONNECT OK") != NULL)||(strstr(receivedString, "ALREADY CONNECT") != NULL) ){
-            timeoutCount=10;
-        }
-        else timeoutCount++;
-    }
-    timeoutCount=0;
-    while(timeoutCount<5)
-    {
-        flushReceiveBuffer();
-        USART_SendString("AT+CIPSTATUS");
-        Delay(300);
-        if(strstr(receivedString, "CONNECT OK") != NULL) {
-            timeoutCount=10;
-        }
-        else timeoutCount++;
-    }
-}
-
-
-void SimHandler_umqtt_init(struct umqtt_connection *conn)
-{
-	umqtt_init(conn);
-	umqtt_circ_init(&conn->txbuff);
-	umqtt_circ_init(&conn->rxbuff);
-
-	umqtt_connect(conn, MQTT_KEEP_ALIVE, MQTT_CLIENT_ID);
-}
-
-static void handle_message(struct umqtt_connection __attribute__((unused))*conn,
-		char *topic, uint8_t *data, int len)
-{
-	char str[len + 1];
-	unsigned int h;
-	unsigned int m;
-	unsigned int s;
-
-	memcpy(str, data, len);
-
-	str[len] = 0;
-
-}
-
-
-void USART_SendString(char StringToSend[])
-{
-    uint16_t Length = strlen(StringToSend);
-    uint16_t i;
-    for (i=0; i<Length; i++ )
-    {
-        USART_SendData(USART2, StringToSend[i]);
-        while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    }
-    USART_SendData(USART2,0x0D);//end the message
-    while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-}
-void flushReceiveBuffer(void)
-{
-    uint16_t i;
-    for(i=0; i<50; i++) receivedString[i]=0;//flush buffer
-    receivedStringLen=0;
-}
 
 void flushDEBUGBuffer(void)
 {
