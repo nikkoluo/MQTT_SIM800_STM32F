@@ -18,6 +18,7 @@
 #include "config.h"
 #include "Debug.h"
 #include "SIM808.h"
+#include "Delay.h"
 
 #define LINEMAX 50
 uint8_t writeflag=0;
@@ -25,43 +26,26 @@ uint8_t writeflag=0;
 
 int main(void)
 {
-////initialise
-    LCD5110_init();
-    LCD5110_clear();
-
-    //init_USART();
-    init_DebugUSART();
-    init_SIMUSART();
+////initialize
+    //initDelay();
+    debugInit();
+    Sim808_init();
 
     uint8_t  i;
-    DEBUG_Send("hello world");
+    debugSend("hello world\n");
+    delayMilli(10);
+    debugSend("hello world2\n");
+    //Sim808_send("ATD0722552972;");
+    Sim808_send("AT");
+    delayMilli(100);
+    Sim808_send("AT");
+    debugSend("hello world2\n");
     while(1)
     {
-         if ( Sim808_connect())
-        {
-             Sim808_receive();
-             Sim808_send();
-         }
-        if(strstr(receivedDebug, "X_conn") != NULL)
-        {
-            SIM_Connection();
-            flushDEBUGBuffer();
-        }
-        if(strstr(receivedDebug, "X_mqttcon") != NULL)
-        {
-            DEBUG_Send("hello");
-            flushDEBUGBuffer();
-
-        }
-        if ((USART_GetFlagStatus(USART2, USART_FLAG_IDLE))&&(receivedStringLen>1))
-        {
-            //LCD5110_write_string(receivedString);
-            Delay(1);
-            DEBUG_Send(receivedString);
-            writeflag=0;
-            for(i=0; i<50; i++) receivedString[i]=0;//flush buffer
-            receivedStringLen=0;
-        }
+        debugSend("hello world3\n");
+        delayMilli(1000);
+        Sim808_send("AT");
+        debugSend("hello again\n");
     }
     return 0;
 }
@@ -113,7 +97,7 @@ int main(void)
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART2, ENABLE);
 }
-*/
+
 void Init_SIM(void)
 {
     USART_SendString("AT+CSQ");
@@ -136,14 +120,9 @@ void Init_SIM(void)
         }
     }
 }
+*/
 
 
-void flushDEBUGBuffer(void)
-{
-    uint16_t i;
-    for(i=0; i<50; i++) receivedDebug[i]=0;//flush buffer
-    receivedDebugLen=0;
-}
 void Delay(__IO uint32_t nCount) //in millisecond
 {
 	nCount = nCount * 5940 *2;//381;
@@ -153,29 +132,6 @@ void Delay(__IO uint32_t nCount) //in millisecond
 }
 
 
-void USART2_IRQHandler (void)
-{
-    if(USART_GetITStatus(USART2, USART_IT_RXNE)!= RESET)
-    {
-        receivedString[receivedStringLen++] = USART_ReceiveData(USART2);
-        if(receivedString[receivedStringLen-1]==0x0d) writeflag=1;
-    }
 
-}
-void USART1_IRQHandler (void)
-{
-    if(USART_GetITStatus(USART1, USART_IT_RXNE)!= RESET)
-    {
-        receivedDebug[receivedDebugLen++] = USART_ReceiveData(USART1);
-        if(receivedDebug[receivedDebugLen-1]==0x0d)
-        {
-            USART_ClearFlag(USART1, USART_FLAG_RXNE);
-            DEBUG_Send("check\n");
-            //USART_SendString("AT");
-            flushDEBUGBuffer();
-        }
-    }
-
-}
 
 

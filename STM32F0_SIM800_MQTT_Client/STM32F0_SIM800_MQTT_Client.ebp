@@ -167,10 +167,10 @@
 		<Unit filename="cmsis\core_cm0.h" />
 		<Unit filename="cmsis\core_cmFunc.h" />
 		<Unit filename="cmsis\core_cmInstr.h" />
-		<Unit filename="inc\5110.h" />
 		<Unit filename="inc\Debug.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="inc\Delay.h" />
 		<Unit filename="inc\SIM808.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -186,10 +186,10 @@
 		<Unit filename="inc\system_stm32f0xx.h" />
 		<Unit filename="inc\umqtt.h" />
 		<Unit filename="readme.txt" />
-		<Unit filename="src\5110.c">
+		<Unit filename="src\Debug.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="src\Debug.c">
+		<Unit filename="src\Delay.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src\SIM808.c">

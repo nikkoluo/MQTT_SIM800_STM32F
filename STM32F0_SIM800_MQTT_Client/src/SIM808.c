@@ -9,8 +9,8 @@
 #include "SIM808.h"
 #include "stm32f0xx_conf.h"
 #include <string.h>
-char receivedString[200];
-unsigned char receivedStringLen;
+char rxBuf[300];
+unsigned char rxBufLen;
 
 void Sim808_init(void)
 {
@@ -40,7 +40,7 @@ void Sim808_init(void)
         USART_InitStruct.USART_StopBits = USART_StopBits_1;
         USART_InitStruct.USART_Parity = USART_Parity_No;
         USART_InitStruct.USART_Mode = USART_Mode_Tx|USART_Mode_Rx;
-        USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+        USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_Init(USART2, &USART_InitStruct);
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART2, ENABLE);
@@ -54,22 +54,10 @@ int Sim808_connect()
     while(timeoutCount<5)
     {
         flushReceiveBuffer();
-        USART_SendString("AT+CIPSHUT");
-        Delay(15);
-        DEBUG_Send(receivedString);
-        if(strstr(receivedString, "SHUT OK") != NULL) {
-            timeoutCount=10;
-        }
-        else timeoutCount++;
-    }
-    timeoutCount=0;
-    while(timeoutCount<5)
-    {
-        flushReceiveBuffer();
         USART_SendString(connString);
         Delay(100);
-        DEBUG_Send(receivedString);
-        if((strstr(receivedString, "CONNECT OK") != NULL)||(strstr(receivedString, "ALREADY CONNECT") != NULL) ){
+        DEBUG_Send(rxBuf);
+        if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) ){
             timeoutCount=10;
         }
         else timeoutCount++;
@@ -80,15 +68,16 @@ int Sim808_connect()
         flushReceiveBuffer();
         USART_SendString("AT+CIPSTATUS");
         Delay(300);
-        if(strstr(receivedString, "CONNECT OK") != NULL) {
+        if(strstr(rxBuf, "CONNECT OK") != NULL) {
             timeoutCount=10;
         }
         else timeoutCount++;
     }
     return 1;
 }
-int Sim808_send(const uint8_t* data, size_t length)
+int Sim808_send(const char* data)
 {
+    size_t length = strlen(data);
     uint16_t i;
     for (i=0; i<length; i++ )
     {
@@ -99,9 +88,15 @@ int Sim808_send(const uint8_t* data, size_t length)
     while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
     return 1;
 }
-int Sim808_receive(const uint8_t* data, size_t length )
+int Sim808_receive(const uint8_t* data, uint8_t length )
 {
 
     return 1;
 }
 
+void flushReceiveBuffer()
+{
+    uint16_t i;
+    for(i=0; i<300; i++) rxBuf[i]=0;//flush buffer
+    rxBufLen=0;
+}

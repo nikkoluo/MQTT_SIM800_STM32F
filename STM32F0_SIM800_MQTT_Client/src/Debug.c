@@ -13,7 +13,7 @@
 char receivedDebug[200];
 unsigned char receivedDebugLen;
 
-void init_DebugUSART(void)
+void debugInit(void)
 {
 
     /*
@@ -52,7 +52,7 @@ NVIC_InitTypeDef NVIC_InitStructure;
     USART_Cmd(USART1, ENABLE);
 }
 
-void DEBUG_Send(char StringToSend[])
+void debugSend(char StringToSend[])
 {
     uint16_t Length = strlen(StringToSend);
     uint16_t i;
@@ -61,4 +61,14 @@ void DEBUG_Send(char StringToSend[])
         USART_SendData(USART1, StringToSend[i]);
         while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
     }
+}
+void debugFlushRx(void)
+{
+    uint16_t i;
+    for(i=0; i<50; i++) receivedDebug[i]=0;//flush buffer
+    receivedDebugLen=0;
+}
+void debugReceive()
+{
+
 }
