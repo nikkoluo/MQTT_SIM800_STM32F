@@ -21,7 +21,7 @@ void debugInit(void)
             TX - PA9
             RX - PA10
     */
-NVIC_InitTypeDef NVIC_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 0x0F;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
@@ -29,16 +29,6 @@ NVIC_InitTypeDef NVIC_InitStructure;
 
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX
-    GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10;
-        GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
-        GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-        GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
     USART_InitTypeDef USART_InitStruct;
         USART_InitStruct.USART_BaudRate =  115200;//Add baud rate
         USART_InitStruct.USART_WordLength = USART_WordLength_8b;
@@ -70,5 +60,13 @@ void debugFlushRx(void)
 }
 void debugReceive()
 {
+
+}
+void USART1_IRQHandler (void)
+{
+    if(USART_GetITStatus(USART1, USART_IT_RXNE)!= RESET)
+    {
+        receivedDebug[receivedDebugLen++] = USART_ReceiveData(USART1);
+    }
 
 }

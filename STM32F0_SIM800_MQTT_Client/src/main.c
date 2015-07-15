@@ -21,117 +21,68 @@
 #include "Delay.h"
 
 #define LINEMAX 50
-uint8_t writeflag=0;
+
+char rxData [300];
+extern char rxBuf[300];
+extern uint16_t rxBufLen;
+
+static uint8_t mqtt_txbuff[200];
+static uint8_t mqtt_rxbuff[150];s
+static struct umqtt_connection mqtt = {
+	.txbuff = {
+		.start = mqtt_txbuff,
+		.length = sizeof(mqtt_txbuff),
+	},
+	.rxbuff = {
+		.start = mqtt_rxbuff,
+		.length = sizeof(mqtt_rxbuff),
+	},
+	.message_callback = handle_message,
+};
+
+
 
 
 int main(void)
 {
+    uint16_t index=0;
 ////initialize
-    //initDelay();
+    initDelay();
+    gpioInit();
     debugInit();
-    Sim808_init();
+    simInit();
 
     uint8_t  i;
     debugSend("hello world\n");
-    delayMilli(10);
+    delayMilliIT(1000);
     debugSend("hello world2\n");
-    //Sim808_send("ATD0722552972;");
-    Sim808_send("AT");
-    delayMilli(100);
-    Sim808_send("AT");
-    debugSend("hello world2\n");
-    while(1)
-    {
-        debugSend("hello world3\n");
-        delayMilli(1000);
-        Sim808_send("AT");
-        debugSend("hello again\n");
-    }
+
+
+    simSend("ATD");
+    delayMilliIT(30);
+    if (rxBufLen>0) debugSend(rxBuf);
+
+
     return 0;
 }
 
-/*void init_USART(void)
+void gpioInit()
 {
-    NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPriority = 0x0F;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
-
-	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPriority = 0x0F;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
-
-
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
-
+    //USART 1 and 2
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX1
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX1
     GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_2|GPIO_Pin_3;
+        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_9|GPIO_Pin_10;
         GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
         GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
         GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
         GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
-    USART_InitTypeDef USART_InitStruct;
-        USART_InitStruct.USART_BaudRate =  115200;//Add baud rate
-        USART_InitStruct.USART_WordLength = USART_WordLength_8b;
-        USART_InitStruct.USART_StopBits = USART_StopBits_1;
-        USART_InitStruct.USART_Parity = USART_Parity_No;
-        USART_InitStruct.USART_Mode = USART_Mode_Tx|USART_Mode_Rx;
-        USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 
-    USART_Init(USART1, &USART_InitStruct);
-    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
-    USART_Cmd(USART1, ENABLE);
-    USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
-    USART_Init(USART2, &USART_InitStruct);
-    USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-    USART_Cmd(USART2, ENABLE);
+
 }
-
-void Init_SIM(void)
-{
-    USART_SendString("AT+CSQ");
-    Delay(2);
-    if(strstr(receivedString, "OK") != NULL) {
-        flushReceiveBuffer();
-        DEBUG_Send("DONE CSQ--");
-        USART_SendString("AT+CGATT?");
-        Delay(2);
-        while(strstr(receivedString, "1") == NULL)
-        {
-            flushReceiveBuffer();
-            Delay(2);
-            USART_SendString("AT+CGATT=1");
-        }
-        if(strstr(receivedString, "1") != NULL) {
-            flushReceiveBuffer();
-            DEBUG_Send("DONE ATT--");
-            Delay(2);
-        }
-    }
-}
-*/
-
-
-void Delay(__IO uint32_t nCount) //in millisecond
-{
-	nCount = nCount * 5940 *2;//381;
-	while(nCount--)
-	{
-	}
-}
-
-
-
-
-

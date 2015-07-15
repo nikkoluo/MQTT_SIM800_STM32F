@@ -9,10 +9,14 @@
 #include "SIM808.h"
 #include "stm32f0xx_conf.h"
 #include <string.h>
-char rxBuf[300];
-unsigned char rxBufLen;
 
-void Sim808_init(void)
+
+
+
+char rxBuf[300];
+uint16_t rxBufLen ,marker;
+
+void simInit(void)
 {
     NVIC_InitTypeDef NVIC_InitStructure;
 	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
@@ -21,19 +25,6 @@ void Sim808_init(void)
 	NVIC_Init(&NVIC_InitStructure);
 
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
-
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX
-    GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3;
-        GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
-        GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-        GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
     USART_InitTypeDef USART_InitStruct;
         USART_InitStruct.USART_BaudRate =  115200;
         USART_InitStruct.USART_WordLength = USART_WordLength_8b;
@@ -46,7 +37,7 @@ void Sim808_init(void)
     USART_Cmd(USART2, ENABLE);
 }
 
-int Sim808_connect()
+int simConnect()
 {
     unsigned char timeoutCount=0;
     char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
@@ -75,7 +66,8 @@ int Sim808_connect()
     }
     return 1;
 }
-int Sim808_send(const char* data)
+
+void simSend(const char* data)
 {
     size_t length = strlen(data);
     uint16_t i;
@@ -86,17 +78,21 @@ int Sim808_send(const char* data)
     }
     USART_SendData(USART2,0x0D);//end the message
     while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
-    return 1;
-}
-int Sim808_receive(const uint8_t* data, uint8_t length )
-{
-
-    return 1;
 }
 
 void flushReceiveBuffer()
 {
     uint16_t i;
-    for(i=0; i<300; i++) rxBuf[i]=0;//flush buffer
+    for (i=0; i<300; i++) rxBuf[i]=0;
     rxBufLen=0;
+    marker =0;
+}
+
+void USART2_IRQHandler (void)
+{
+    if(USART_GetITStatus(USART2, USART_IT_RXNE)!= RESET)
+    {
+        rxBuf[rxBufLen++] = USART_ReceiveData(USART2);
+    }
+
 }
