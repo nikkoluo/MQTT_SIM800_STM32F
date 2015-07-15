@@ -62,18 +62,43 @@ int main(void)
     delayMilliIT(30);
     if (rxBufLen>0) debugSend(rxBuf);
 
-    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-
+    //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+    char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
     simSend(connString);
     delayMilliIT(100);
 
     if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) )
     {
-        umqtt_init(mqtt);
-        umqtt_circ_init(&mqtt->txbuff);
-        umqtt_circ_init(&mqtt->rxbuff);
+        char txBuf[]=fi;
+        int cidlen = strlen("stm32test");
+        uint8_t fixed;
+        uint8_t remlen[4];
+        uint8_t variable[10];
+        uint8_t payload[2 + cidlen];
 
-        umqtt_connect(mqtt, 30, "stm-mqtt-10");
+        fixed = umqtt_build_header(UMQTT_CONNECT, 0, 0, 0);
+
+        variable[0] = 0; /* UTF Protocol name */
+        variable[1] = 4;
+        variable[2] = 'M';
+        variable[3] = 'Q';
+        variable[4] = 'T';
+        variable[5] = 'T';
+        variable[6] = 4;
+        variable[7] = 0b00000010; /* Clean session flag */
+        variable[8] = 0; /* Keep Alive timer MSB */
+        variable[9] = 60;/* Keep Alive timer LSB*/
+
+        payload[0] = cidlen >> 8;
+        payload[1] = cidlen & 0xff;
+        memcpy(&payload[2], cid, cidlen);
+
+        umqtt_circ_push(&conn->txbuff, &fixed, 1);
+        umqtt_circ_push(&conn->txbuff, remlen, umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
+        umqtt_circ_push(&conn->txbuff, variable, sizeof(variable));
+        umqtt_circ_push(&conn->txbuff, payload, sizeof(payload));
+
+
     }
 
     return 0;
