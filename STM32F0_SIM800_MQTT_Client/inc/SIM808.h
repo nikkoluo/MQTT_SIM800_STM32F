@@ -7,5 +7,8 @@ void simSend(const char* data);
 int simReceive(const uint8_t* data, uint8_t length);
 int simAvailable(void);
 int simRead(void);
+void simMqttInit(struct umqtt_connection *conn);
+
+
 
 #endif /* SIM808_H_INCLUDED */

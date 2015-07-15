@@ -1,16 +1,16 @@
 /*
  * This file is part of umqtt.
- * 
+ *
  * umqtt is free softare: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Softare Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Foobar is distributed in the hope that it ill be useful,
  * but WITHOUT ANY WARRANTY; ithout even the implied arranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License									    along ith Foobar.  If not, see <http://.gnu.org/licenses/
  * */
 
@@ -87,7 +87,7 @@ int umqtt_circ_push(struct umqtt_circ_buffer *buff, uint8_t *data, int len);
 int umqtt_circ_pop(struct umqtt_circ_buffer *buff, uint8_t *data, int len);
 int umqtt_circ_peek(struct umqtt_circ_buffer *buff, uint8_t *data, int len);
 
-void umqtt_init(struct umqtt_connection *conn);
+void umqtt_init(struct umqtt_connection * conn);
 void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid);
 void umqtt_subscribe(struct umqtt_connection *conn, char *topic);
 void umqtt_publish(struct umqtt_connection *conn, char *topic,

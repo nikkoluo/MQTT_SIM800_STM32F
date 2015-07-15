@@ -9,12 +9,12 @@
 #include "SIM808.h"
 #include "stm32f0xx_conf.h"
 #include <string.h>
-
-
+#include "Delay.h"
+#include "umqtt.h"
 
 
 char rxBuf[300];
-uint16_t rxBufLen ,marker;
+uint16_t rxBufLen;
 
 void simInit(void)
 {
@@ -79,13 +79,29 @@ void simSend(const char* data)
     USART_SendData(USART2,0x0D);//end the message
     while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
 }
+/*
+void simMqttInit(struct umqtt_connection *conn)
+{
+    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+
+    simSend(connString);
+    delayMilliIT(100);
+
+    if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) )
+    {
+        umqtt_init(conn);
+        umqtt_circ_init(&conn->txbuff);
+        umqtt_circ_init(&conn->rxbuff);
+
+        umqtt_connect(conn, 30, "stm-mqtt-10");
+    }
+}*/
 
 void flushReceiveBuffer()
 {
     uint16_t i;
     for (i=0; i<300; i++) rxBuf[i]=0;
     rxBufLen=0;
-    marker =0;
 }
 
 void USART2_IRQHandler (void)

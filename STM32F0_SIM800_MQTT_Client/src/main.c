@@ -27,7 +27,7 @@ extern char rxBuf[300];
 extern uint16_t rxBufLen;
 
 static uint8_t mqtt_txbuff[200];
-static uint8_t mqtt_rxbuff[150];s
+static uint8_t mqtt_rxbuff[150];
 static struct umqtt_connection mqtt = {
 	.txbuff = {
 		.start = mqtt_txbuff,
@@ -37,7 +37,7 @@ static struct umqtt_connection mqtt = {
 		.start = mqtt_rxbuff,
 		.length = sizeof(mqtt_rxbuff),
 	},
-	.message_callback = handle_message,
+	//.message_callback = handle_message,
 };
 
 
@@ -58,10 +58,23 @@ int main(void)
     debugSend("hello world2\n");
 
 
-    simSend("ATD");
+    simSend("AT");
     delayMilliIT(30);
     if (rxBufLen>0) debugSend(rxBuf);
 
+    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+
+    simSend(connString);
+    delayMilliIT(100);
+
+    if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) )
+    {
+        umqtt_init(mqtt);
+        umqtt_circ_init(&mqtt->txbuff);
+        umqtt_circ_init(&mqtt->rxbuff);
+
+        umqtt_connect(mqtt, 30, "stm-mqtt-10");
+    }
 
     return 0;
 }
