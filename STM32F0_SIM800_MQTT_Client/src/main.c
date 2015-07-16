@@ -43,12 +43,11 @@ typedef enum  {
 	STATE_PDPDEACT,
 } tcp_state;
 
+tcp_state current_state = STATE_INITIAL;
 
 int main(void)
 {
-    tcp_state current_state = STATE_INITIAL;
     uint16_t index=0;
-    uint8_t flag_inital=0, flag_start=0, flag_config=0, flag_Connected=0 ;
 ////initialize
     initDelay();
     gpioInit();
@@ -56,7 +55,6 @@ int main(void)
     simInit();
 
     debugSend("begin");
-char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
 
 
     simSend("AT");
@@ -64,22 +62,152 @@ char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
     if(rxBufLen>0) debugSend(rxBuf);
     flushReceiveBuffer();
 
-    flushReceiveBuffer();
-    simSend("AT+CIPMUX=0");
-    delayMilliIT(300);
-    debugSend(rxBuf);
 
-    flushReceiveBuffer();
-    simSend("AT+CIPMODE=0");
-    delayMilliIT(300);
-    debugSend(rxBuf);
+    simConnect1();
 
-    flushReceiveBuffer();
-    simSend("AT+CIPSHUT");
-    delayMilliIT(300);
+
+    //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+
+    delayMilliIT(4000);
     debugSend(rxBuf);
-//Start the flow diagram
-    while (flag_Connected==0)
+    flushReceiveBuffer();
+
+        char txBuf[40], str[30];
+        char cid[] ="stm32test";
+        int cidlen = strlen(cid);
+        uint8_t fixed;
+        uint8_t remlen[4];
+        uint8_t variable[10];
+        uint8_t payload[2 + cidlen];
+        int i=0;
+        for (;i<40;i++) txBuf[i]=0;
+
+        fixed = umqtt_build_header(UMQTT_CONNECT, 0, 0, 0);
+
+        variable[0] = 0; /* UTF Protocol name */
+        variable[1] = 4;
+        variable[2] = 'M';
+        variable[3] = 'Q';
+        variable[4] = 'T';
+        variable[5] = 'T';
+        variable[6] = 4;
+        variable[7] = 0b00000010; /* Clean session flag */
+        variable[8] = 0; /* Keep Alive timer MSB */
+        variable[9] = 60;/* Keep Alive timer LSB*/
+
+        payload[0] = cidlen >> 8;
+        payload[1] = cidlen & 0xff;
+        memcpy(&payload[2], cid, cidlen);
+
+        txBuf[0]=fixed;
+        int head=0;
+        int encLen=umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen);
+        for(i=0; i<encLen; i++)
+        {
+            txBuf[i+1]=remlen[i];
+        }
+        head=i+1;
+        //txBuf[1]=remlen[0];
+        for(i=head; i<(sizeof(variable)+head); i++)
+        {
+            txBuf[i]=variable[i-head];
+        }
+        head=i+1;
+        for(i=head; i<(sizeof(payload)+head); i++)
+        {
+            txBuf[i]=payload[i-head];
+        }
+        head=i;
+        sprintf(str, "%d", umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
+        debugSend2(txBuf,head);
+
+    while(1)
+    {
+        delayMilliIT(2000);
+        simConnect1();
+        if(rxBufLen>0)
+        {
+            debugSend(rxBuf);
+            flushReceiveBuffer();
+        }
+        simSend("AT+CIPSTATUS");
+        delayMilliIT(10);
+        debugSend(rxBuf);
+        flushReceiveBuffer();
+    }
+    debugSend("-exiting-");
+}
+
+void gpioInit()
+{
+    //USART 1 and 2
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX1
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX1
+    GPIO_InitTypeDef GPIO_InitStruct;
+        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_9|GPIO_Pin_10;
+        GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
+        GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
+        GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+        GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+
+}
+int umqtt_encode_length(int len, uint8_t *data)
+{
+	int digit;
+	int i = 0;
+
+	do {
+		digit = len % 128;
+		len /= 128;
+		if (len > 0)
+			digit |= 0x80;
+		data[i] = digit;
+		i++;
+	} while (len);
+
+	return i; /* Return the amount of bytes used */
+}
+void simTransmit(char * stringToSend)
+{
+    char *sendStr;
+
+    sprintf(sendStr, "%d", sizeof(stringToSend));
+    simSend("AT+CIPSEND=");
+
+}
+void simConnect1()
+{
+    char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
+    int flag_Connected=0;
+    if (current_state!=STATE_CONNECTED)
+    {
+
+        flushReceiveBuffer();
+        simSend("AT+CIPMUX=0");
+        delayMilliIT(300);
+        debugSend(rxBuf);
+
+        flushReceiveBuffer();
+        simSend("AT+CIPMODE=0");
+        delayMilliIT(300);
+        debugSend(rxBuf);
+
+        flushReceiveBuffer();
+        simSend("AT+CIPSHUT");
+        delayMilliIT(300);
+        debugSend(rxBuf);
+    }
+
+
+    //Start the flow diagram
+    while (current_state!=STATE_CONNECTED)
     {
         flushReceiveBuffer();
         simSend("AT+CIPSTATUS");
@@ -158,127 +286,4 @@ char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
                 break;
         }
     }
-
-
-    uint8_t  i;
-
-    //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-//    char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
-   // simSend(connString);
-    delayMilliIT(4000);
-    debugSend(rxBuf);
-    flushReceiveBuffer();
-
-    //if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) )
-    {
-        //flag_Connected=1;
-
-        char txBuf[40], str[30];
-        char cid[] ="stm32test";
-        int cidlen = strlen(cid);
-        uint8_t fixed;
-        uint8_t remlen[4];
-        uint8_t variable[10];
-        uint8_t payload[2 + cidlen];
-        int i=0;
-        for (;i<40;i++) txBuf[i]=0;
-
-        fixed = umqtt_build_header(UMQTT_CONNECT, 0, 0, 0);
-
-        variable[0] = 0; /* UTF Protocol name */
-        variable[1] = 4;
-        variable[2] = 'M';
-        variable[3] = 'Q';
-        variable[4] = 'T';
-        variable[5] = 'T';
-        variable[6] = 4;
-        variable[7] = 0b00000010; /* Clean session flag */
-        variable[8] = 0; /* Keep Alive timer MSB */
-        variable[9] = 60;/* Keep Alive timer LSB*/
-
-        payload[0] = cidlen >> 8;
-        payload[1] = cidlen & 0xff;
-        memcpy(&payload[2], cid, cidlen);
-
-        txBuf[0]=fixed;
-        int head=0;
-        int encLen=umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen);
-        for(i=0; i<encLen; i++)
-        {
-            txBuf[i+1]=remlen[i];
-        }
-        head=i+1;
-        //txBuf[1]=remlen[0];
-        for(i=head; i<(sizeof(variable)+head); i++)
-        {
-            txBuf[i]=variable[i-head];
-        }
-        head=i+1;
-        for(i=head; i<(sizeof(payload)+head); i++)
-        {
-            txBuf[i]=payload[i-head];
-        }
-        head=i;
-        sprintf(str, "%d", umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
-        debugSend2(txBuf,head);
-
-    }
-
-    while(flag_Connected)
-    {
-        delayMilliIT(2000);
-        if(rxBufLen>0)
-        {
-            debugSend(rxBuf);
-            flushReceiveBuffer();
-        }
-        simSend("AT+CIPSTATUS");
-        delayMilliIT(10);
-        debugSend(rxBuf);
-        flushReceiveBuffer();
-        if((strstr(rxBuf, "CONNECT OK") != NULL))
-        {
-            flag_Connected=1;
-        }
-        else flag_Connected=0;
-    }
-    debugSend("-exiting-");
 }
-
-void gpioInit()
-{
-    //USART 1 and 2
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS2
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS2
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX2
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX2
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX1
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX1
-    GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_9|GPIO_Pin_10;
-        GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
-        GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
-        GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-        GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-
-}
-int umqtt_encode_length(int len, uint8_t *data)
-{
-	int digit;
-	int i = 0;
-
-	do {
-		digit = len % 128;
-		len /= 128;
-		if (len > 0)
-			digit |= 0x80;
-		data[i] = digit;
-		i++;
-	} while (len);
-
-	return i; /* Return the amount of bytes used */
-}
-
