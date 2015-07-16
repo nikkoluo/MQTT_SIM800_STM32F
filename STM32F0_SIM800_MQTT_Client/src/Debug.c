@@ -52,6 +52,15 @@ void debugSend(char StringToSend[])
         while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
     }
 }
+void debugSend2(char StringToSend[], int len)
+{
+    uint16_t i;
+    for (i=0; i<len; i++ )
+    {
+        USART_SendData(USART1, StringToSend[i]);
+        while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
+    }
+}
 void debugFlushRx(void)
 {
     uint16_t i;

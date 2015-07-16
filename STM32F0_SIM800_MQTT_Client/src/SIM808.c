@@ -39,32 +39,7 @@ void simInit(void)
 
 int simConnect()
 {
-    unsigned char timeoutCount=0;
-    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
 
-    while(timeoutCount<5)
-    {
-        flushReceiveBuffer();
-        USART_SendString(connString);
-        Delay(100);
-        DEBUG_Send(rxBuf);
-        if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) ){
-            timeoutCount=10;
-        }
-        else timeoutCount++;
-    }
-    timeoutCount=0;
-    while(timeoutCount<5)
-    {
-        flushReceiveBuffer();
-        USART_SendString("AT+CIPSTATUS");
-        Delay(300);
-        if(strstr(rxBuf, "CONNECT OK") != NULL) {
-            timeoutCount=10;
-        }
-        else timeoutCount++;
-    }
-    return 1;
 }
 
 void simSend(const char* data)
