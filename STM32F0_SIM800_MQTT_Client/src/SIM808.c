@@ -144,6 +144,6 @@ void nethandler_umqtt_init(struct umqtt_connection *conn)
 	umqtt_circ_init(&conn->txbuff);
 	umqtt_circ_init(&conn->rxbuff);
 
-	umqtt_connect(conn, 30, MQTT_CLIENT_ID);
+	umqtt_connect(conn, 30, MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);
 
 }

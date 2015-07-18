@@ -6,6 +6,8 @@
 
 #define MQTT_KEEP_ALIVE			60
 #define MQTT_CLIENT_ID			"stmtest"
+#define MQTT_USERNAME			"stm"
+#define MQTT_PASSWORD			"123"
 #define MQTT_TOPIC_GPS_LONG		"gps/longitude"
 #define MQTT_TOPIC_GPS_LAT		"gps/latitude"
 
