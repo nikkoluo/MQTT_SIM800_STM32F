@@ -54,24 +54,73 @@ void simSend(const char* data)
     USART_SendData(USART2,0x0D);//end the message
     while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
 }
-/*
-void simMqttInit(struct umqtt_connection *conn)
+void simSendRaw(const char* data)
 {
-    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-
-    simSend(connString);
-    delayMilliIT(100);
-
-    if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL) )
+    size_t length = strlen(data);
+    uint16_t i;
+    for (i=0; i<length; i++ )
     {
-        umqtt_init(conn);
-        umqtt_circ_init(&conn->txbuff);
-        umqtt_circ_init(&conn->rxbuff);
-
-        umqtt_connect(conn, 30, "stm-mqtt-10");
+        USART_SendData(USART2, data[i]);
+        while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
     }
-}*/
+}
 
+void simTransmit(char * stringToSend, uint16_t length)
+{
+    //char sendStr[length];
+    uint8_t ready=0;
+    //sprintf(sendStr, "AT+CIPSEND=%u", length);
+    //debugSend(sendStr);
+
+    flushReceiveBuffer();
+    //simSend(sendStr);
+    /*while(!ready)
+    {
+        delayMilli(100);
+        if(strstr(rxBuf, ">") != NULL)
+        {
+            ready=1;
+        }
+        debugSend(rxBuf);
+        debugSend("waiting");
+    }*/
+    debugSend("----about to send--\n");
+    uint16_t i;
+    for (i=0; i<length; i++)
+    {
+        USART_SendData(USART2, stringToSend[i]);
+        while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
+    }
+}
+void simEnterDataMode()
+{
+    uint8_t wait=1;
+    flushReceiveBuffer();
+    simSend("ATO");
+    while(wait)
+    {
+        delayMilli(100);
+        if(strstr(rxBuf, "CONNECT") != NULL)
+        {
+            wait=0;
+        }
+        if(strstr(rxBuf, "ERROR") != NULL)
+        {
+            flushReceiveBuffer();
+            simSend("ATO");
+        }
+        debugSend(rxBuf);
+        debugSend("waiting------\n");
+    }
+    debugSend("exited----------\n");
+    flushReceiveBuffer();
+}
+void simExitDataMode()
+{
+    delayMilliIT(1000);
+    simSend("+++");
+    delayMilliIT(1000);
+}
 void flushReceiveBuffer()
 {
     uint16_t i;

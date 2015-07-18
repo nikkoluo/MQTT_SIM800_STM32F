@@ -31,6 +31,7 @@ extern char rxBuf[300];
 extern uint16_t rxBufLen;
 
 typedef enum  {
+    STATE_OFF,
 	STATE_INITIAL,
 	STATE_START,
 	STATE_CONFIG,
@@ -42,7 +43,7 @@ typedef enum  {
 	STATE_CLOSED,
 	STATE_PDPDEACT,
 } tcp_state;
-
+//set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_INITIAL;
 
 int main(void)
@@ -54,7 +55,7 @@ int main(void)
     debugInit();
     simInit();
 
-    debugSend("begin");
+    debugSend("begin\n");
 
 
     simSend("AT");
@@ -62,15 +63,10 @@ int main(void)
     if(rxBufLen>0) debugSend(rxBuf);
     flushReceiveBuffer();
 
+    simUpdateState();
+    if(current_state!=STATE_CONNECTED) simConnect1();
 
-    simConnect1();
-
-
-    //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-
-    delayMilliIT(4000);
-    debugSend(rxBuf);
-    flushReceiveBuffer();
+    delayMilliIT(2000);
 
         char txBuf[40], str[30];
         char cid[] ="stm32test";
@@ -78,7 +74,7 @@ int main(void)
         uint8_t fixed;
         uint8_t remlen[4];
         uint8_t variable[10];
-        uint8_t payload[2 + cidlen];
+        uint8_t payload[1 + cidlen];
         int i=0;
         for (;i<40;i++) txBuf[i]=0;
 
@@ -95,9 +91,12 @@ int main(void)
         variable[8] = 0; /* Keep Alive timer MSB */
         variable[9] = 60;/* Keep Alive timer LSB*/
 
-        payload[0] = cidlen >> 8;
-        payload[1] = cidlen & 0xff;
-        memcpy(&payload[2], cid, cidlen);
+        //payload[0] = cidlen >> 8;
+        payload[0] = cidlen & 0xff;
+        for(i=0; i<cidlen; i++)
+        {
+            payload[i+1]=cid[i];
+        }
 
         txBuf[0]=fixed;
         int head=0;
@@ -112,7 +111,7 @@ int main(void)
         {
             txBuf[i]=variable[i-head];
         }
-        head=i+1;
+        head=i;
         for(i=head; i<(sizeof(payload)+head); i++)
         {
             txBuf[i]=payload[i-head];
@@ -121,19 +120,31 @@ int main(void)
         sprintf(str, "%d", umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
         debugSend2(txBuf,head);
 
+    uint8_t counter=0;
     while(1)
     {
+        counter++;
         delayMilliIT(2000);
-        simConnect1();
-        if(rxBufLen>0)
+        if(rxBufLen>0)//receive any unexpected data
         {
+            debugSend("\n\n");
             debugSend(rxBuf);
+            debugSend("\n\n");
             flushReceiveBuffer();
         }
-        simSend("AT+CIPSTATUS");
-        delayMilliIT(10);
-        debugSend(rxBuf);
-        flushReceiveBuffer();
+        debugSend("alive\n");
+        if(counter==15)//wait 30 sec then send connect packet
+        {
+            simTransmit(txBuf, head);
+            debugSend("-Sent-");
+        }
+        if(counter==20)//wait 40 sec then exit data
+        {
+            simExitDataMode();
+            debugSend("-Sent-");
+        }
+        //simUpdateState();
+        //if(current_state!=STATE_CONNECTED) simConnect1();
     }
     debugSend("-exiting-");
 }
@@ -174,28 +185,21 @@ int umqtt_encode_length(int len, uint8_t *data)
 
 	return i; /* Return the amount of bytes used */
 }
-void simTransmit(char * stringToSend)
-{
-    char *sendStr;
 
-    sprintf(sendStr, "%d", sizeof(stringToSend));
-    simSend("AT+CIPSEND=");
-
-}
 void simConnect1()
 {
+   //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
     char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
     int flag_Connected=0;
-    if (current_state!=STATE_CONNECTED)
+    if(current_state!=STATE_OFF)
     {
-
         flushReceiveBuffer();
         simSend("AT+CIPMUX=0");
         delayMilliIT(300);
         debugSend(rxBuf);
 
         flushReceiveBuffer();
-        simSend("AT+CIPMODE=0");
+        simSend("AT+CIPMODE=1");//1 for transparent mode 0 for non-transparent (normal)
         delayMilliIT(300);
         debugSend(rxBuf);
 
@@ -203,11 +207,79 @@ void simConnect1()
         simSend("AT+CIPSHUT");
         delayMilliIT(300);
         debugSend(rxBuf);
+        //Start the flow diagram
+        while (current_state!=STATE_CONNECTED)
+        {
+            simUpdateState();
+            switch(current_state)
+            {
+                case STATE_INITIAL:
+                    debugSend("--initial--\n");
+                    flushReceiveBuffer();
+                    simSend("AT+CSTT=\"internet\"");
+                    delayMilliIT(30);
+                    debugSend(rxBuf);
+                    break;
+                case STATE_START:
+                    debugSend("--start--");
+                    flushReceiveBuffer();
+                    simSend("AT+CIICR");
+                    debugSend("--sent--\n");
+                    delayMilliIT(30);
+                    debugSend(rxBuf);
+                    break;
+                case STATE_CONFIG:
+                    debugSend("--config--");
+                    debugSend("CONFIG");
+                    break;
+                case STATE_GPRSACT:
+                    flushReceiveBuffer();
+                    simSend("AT+CIFSR");
+                    delayMilliIT(30);
+                    debugSend(rxBuf);
+                    break;
+                case STATE_STATUS:
+                    flushReceiveBuffer();
+                    debugSend("\n--statusing--\n");
+                    simSend(connString);
+                    delayMilliIT(30);
+                    debugSend(rxBuf);
+                    break;
+                case STATE_CONNECTING:
+                    debugSend("\n--connecting--\n");
+                    break;
+                case STATE_CONNECTED:
+                    debugSend("--CONNECTED!!");
+                    flag_Connected=1;
+                    break;
+                case STATE_CLOSING:
+                    debugSend("closing connection--\n");
+                    break;
+                case STATE_CLOSED:
+                    flushReceiveBuffer();
+                    simSend("AT+CIPSHUT");
+                    delayMilliIT(30);
+                    debugSend(rxBuf);
+                    flag_Connected=0;
+                    break;
+                case STATE_PDPDEACT:
+                    debugSend("kak man..\n");
+                    flushReceiveBuffer();
+                    simSend("AT+CIPSHUT");
+                    delayMilliIT(30);
+                    debugSend(rxBuf);
+                    flag_Connected=0;
+                    break;
+            }
+        }
     }
 
+}
 
-    //Start the flow diagram
-    while (current_state!=STATE_CONNECTED)
+
+void simUpdateState()
+{
+    if(current_state!=STATE_OFF)
     {
         flushReceiveBuffer();
         simSend("AT+CIPSTATUS");
@@ -225,65 +297,6 @@ void simConnect1()
         else if((strstr(rxBuf, "CLOSED") != NULL)) current_state = STATE_CLOSED;
         else if((strstr(rxBuf, "PDP") != NULL)) current_state = STATE_PDPDEACT;
 
-        switch(current_state)
-        {
-            case STATE_INITIAL:
-                debugSend("--initial--\n");
-                flushReceiveBuffer();
-                simSend("AT+CSTT=\"internet\"");
-                delayMilliIT(30);
-                debugSend(rxBuf);
-                break;
-            case STATE_START:
-                debugSend("--start--");
-                flushReceiveBuffer();
-                simSend("AT+CIICR");
-                debugSend("--sent--\n");
-                delayMilliIT(30);
-                debugSend(rxBuf);
-                break;
-            case STATE_CONFIG:
-                debugSend("--config--");
-                debugSend("CONFIG");
-                break;
-            case STATE_GPRSACT:
-                flushReceiveBuffer();
-                simSend("AT+CIFSR");
-                delayMilliIT(30);
-                debugSend(rxBuf);
-                break;
-            case STATE_STATUS:
-                flushReceiveBuffer();
-                debugSend("\n--statusing--\n");
-                simSend(connString);
-                delayMilliIT(30);
-                debugSend(rxBuf);
-                break;
-            case STATE_CONNECTING:
-                debugSend("\n--connecting--\n");
-                break;
-            case STATE_CONNECTED:
-                debugSend("--CONNECTED!!");
-                flag_Connected=1;
-                break;
-            case STATE_CLOSING:
-                debugSend("closing connection--\n");
-                break;
-            case STATE_CLOSED:
-                flushReceiveBuffer();
-                simSend("AT+CIPSHUT");
-                delayMilliIT(30);
-                debugSend(rxBuf);
-                flag_Connected=0;
-                break;
-            case STATE_PDPDEACT:
-                debugSend("kak man..\n");
-                flushReceiveBuffer();
-                simSend("AT+CIPSHUT");
-                delayMilliIT(30);
-                debugSend(rxBuf);
-                flag_Connected=0;
-                break;
-        }
     }
+
 }
