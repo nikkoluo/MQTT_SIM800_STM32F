@@ -82,6 +82,11 @@ void simTransmit(char * stringToSend, uint16_t length)
         {
             ready=1;
         }
+        if(strstr(rxBuf, "ERROR") != NULL)
+        {
+            ready=1;
+            debugSend("failed to send");
+        }
         debugSend(rxBuf);
         debugSend("waiting");
     }
@@ -144,6 +149,6 @@ void nethandler_umqtt_init(struct umqtt_connection *conn)
 	umqtt_circ_init(&conn->txbuff);
 	umqtt_circ_init(&conn->rxbuff);
 
-	umqtt_connect(conn, 30, MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD);
+	umqtt_connect(conn, 30, MQTT_CLIENT_ID, "", "");
 
 }

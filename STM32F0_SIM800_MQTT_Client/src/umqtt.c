@@ -149,7 +149,7 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid, ch
 
 	variable[8] = 3; /* Protocol version */
 
-	variable[9] = 0b11000010; /* Clean session flag */
+	variable[9] = 0b00000010; /* Clean session flag */
 
 	variable[10] = kalive >> 8; /* Keep Alive timer */
 	variable[11] = kalive & 0xff;
@@ -164,7 +164,7 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid, ch
 
     payload[4+cidlen+usrlen] = 0;
 	payload[5+cidlen+usrlen] = 3;
-    memcpy(&payload[6+cidlen + usrlen], "123", 3);
+    memcpy(&payload[6+cidlen + usrlen],passwd, passwdlen);
 
 	umqtt_circ_push(&conn->txbuff, &fixed, 1);
 	umqtt_circ_push(&conn->txbuff, remlen, umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));

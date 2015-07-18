@@ -94,6 +94,7 @@ int main(void)
     {
         counter++;
         delayMilliIT(2000);
+        if(strstr(rxBuf, "ERROR") != NULL) alive=0;//Kill on error
         if(rxBufLen>0)//receive any unexpected data
         {
             debugSend("\n\n");
@@ -109,7 +110,7 @@ int main(void)
             mqtt_txbuff[30]=1;
             mqtt_txbuff[31]=2;
             mqtt_txbuff[32]=3;
-            simTransmit(mqtt_txbuff,33);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             debugSend("-Sent-");
         }
         if(counter==8)//wait 100 sec then exit
@@ -119,7 +120,7 @@ int main(void)
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             sprintf(strtosend, "%d", sendCount++);
-            umqtt_publish(&mqtt, "test/gps", strtosend, 2);
+            umqtt_publish(&mqtt, "temp/random", strtosend, 2);
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             debugSend("-Sent-");
         }
@@ -174,8 +175,8 @@ int umqtt_encode_length(int len, uint8_t *data)
 
 void simConnect1()
 {
-    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-    //char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
+    //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+    char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
     int flag_Connected=0;
     if(current_state!=STATE_OFF)
     {
@@ -215,6 +216,7 @@ void simConnect1()
                     debugSend(rxBuf);
                     break;
                 case STATE_CONFIG:
+                    flushReceiveBuffer();
                     debugSend("--config--");
                     debugSend("CONFIG");
                     break;
@@ -232,11 +234,12 @@ void simConnect1()
                     debugSend(rxBuf);
                     break;
                 case STATE_CONNECTING:
+                    flushReceiveBuffer();
                     debugSend("\n--connecting--\n");
                     break;
                 case STATE_CONNECTED:
+                    flushReceiveBuffer();
                     debugSend("--CONNECTED!!");
-                    flag_Connected=1;
                     break;
                 case STATE_CLOSING:
                     debugSend("closing connection--\n");
@@ -269,7 +272,7 @@ void simUpdateState()
     {
         flushReceiveBuffer();
         simSend("AT+CIPSTATUS");
-        delayMilliIT(100);
+        delayMilliIT(300);
         debugSend(rxBuf);
         if(strstr(rxBuf, "INITIAL") != NULL) current_state = STATE_INITIAL;
         else if((strstr(rxBuf, "START") != NULL)) current_state = STATE_START;
