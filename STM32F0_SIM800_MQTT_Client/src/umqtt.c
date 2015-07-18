@@ -128,13 +128,13 @@ void umqtt_init(struct umqtt_connection *conn)
 	conn->message_id = 1; /* Id 0 is reserved */
 }
 
-void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid)
+void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid, char *username, char *password)
 {
-	int cidlen = strlen(cid);
+	int cidlen = strlen(cid), usernamelen=strlen(username), passwordlen=strlen(password);
 	uint8_t fixed;
 	uint8_t remlen[4];
 	uint8_t variable[12];
-	uint8_t payload[2 + cidlen];
+	uint8_t payload[2 + cidlen + usernamelen + passwordlen];
 
 	fixed = umqtt_build_header(UMQTT_CONNECT, 0, 0, 0);
 
@@ -149,14 +149,16 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid)
 
 	variable[8] = 3; /* Protocol version */
 
-	variable[9] = 0b00000010; /* Clean session flag */
+	variable[9] = 0b11000010; /* Clean session flag */
 
 	variable[10] = kalive >> 8; /* Keep Alive timer */
 	variable[11] = kalive & 0xff;
 
-	payload[0] = cidlen >> 8;
+	payload[0] = cidlen >> 8;test/gps
 	payload[1] = cidlen & 0xff;
 	memcpy(&payload[2], cid, cidlen);
+
+
 
 	umqtt_circ_push(&conn->txbuff, &fixed, 1);
 	umqtt_circ_push(&conn->txbuff, remlen, umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
@@ -184,8 +186,7 @@ void umqtt_subscribe(struct umqtt_connection *conn, char *topic)
 	payload[2 + topiclen] = 0; /* QoS */
 
 	umqtt_circ_push(&conn->txbuff, &fixed, 1);
-	umqtt_circ_push(&conn->txbuff, remlen,
-			umqtt_encode_length(sizeof(messageid) + sizeof(payload), remlen));
+	umqtt_circ_push(&conn->txbuff, remlen, umqtt_encode_length(sizeof(messageid) + sizeof(payload), remlen));
 	umqtt_circ_push(&conn->txbuff, messageid, sizeof(messageid));
 	umqtt_circ_push(&conn->txbuff, payload, sizeof(payload));
 

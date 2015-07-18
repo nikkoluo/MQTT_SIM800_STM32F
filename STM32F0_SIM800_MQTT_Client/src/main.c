@@ -86,61 +86,11 @@ int main(void)
 
     delayMilliIT(2000);
 
-        char txBuf[40], str[30];
-        char cid[] ="stm32test";
-        int cidlen = strlen(cid);
-        uint8_t fixed;
-        uint8_t remlen[4];
-        uint8_t variable[10];
-        uint8_t payload[1 + cidlen];
-        int i=0;
-        for (;i<40;i++) txBuf[i]=0;
 
-        fixed = umqtt_build_header(UMQTT_CONNECT, 0, 0, 0);
+    nethandler_umqtt_init(&mqtt);
 
-        variable[0] = 0; /* UTF Protocol name */
-        variable[1] = 4;
-        variable[2] = 'M';
-        variable[3] = 'Q';
-        variable[4] = 'T';
-        variable[5] = 'T';
-        variable[6] = 4;
-        variable[7] = 0b00000010; /* Clean session flag */
-        variable[8] = 0; /* Keep Alive timer MSB */
-        variable[9] = 60;/* Keep Alive timer LSB*/
-
-        //payload[0] = cidlen >> 8;
-        payload[0] = cidlen & 0xff;
-        for(i=0; i<cidlen; i++)
-        {
-            payload[i+1]=cid[i];
-        }
-
-        txBuf[0]=fixed;
-        int head=0;
-        int encLen=umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen);
-        for(i=0; i<encLen; i++)
-        {
-            txBuf[i+1]=remlen[i];
-        }
-        head=i+1;
-        //txBuf[1]=remlen[0];
-        for(i=head; i<(sizeof(variable)+head); i++)
-        {
-            txBuf[i]=variable[i-head];
-        }
-        head=i;
-        for(i=head; i<(sizeof(payload)+head); i++)
-        {
-            txBuf[i]=payload[i-head];
-        }
-        head=i;
-        sprintf(str, "%d", umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
-        debugSend2(txBuf,head);
-        nethandler_umqtt_init(&mqtt);
-
-    uint8_t counter=0, sendCount=0, strtosend[20];
-    while(1)
+    uint8_t counter=0, sendCount=0, strtosend[20], alive=1;
+    while(alive==1)
     {
         counter++;
         delayMilliIT(2000);
@@ -165,13 +115,19 @@ int main(void)
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             sprintf(strtosend, "%d", sendCount++);
-            umqtt_publish(&mqtt, "temp/random", strtosend, 2);
+            umqtt_publish(&mqtt, "gps/test", strtosend, 2);
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             debugSend("-Sent-");
+        }
+        if(sendCount>=5)
+        {
+            alive=0;//kill
         }
         //simUpdateState();
         //if(current_state!=STATE_CONNECTED) simConnect1();
     }
+    simSend("AT+CIPSHUT");
+    simSend("AT+CIPSHUT");
     debugSend("-exiting-");
 }
 
