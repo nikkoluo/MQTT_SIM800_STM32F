@@ -11,6 +11,7 @@
 #include <string.h>
 #include "Delay.h"
 #include "umqtt.h"
+#include "config.h"
 
 
 char rxBuf[300];
@@ -67,23 +68,23 @@ void simSendRaw(const char* data)
 
 void simTransmit(char * stringToSend, uint16_t length)
 {
-    //char sendStr[length];
+    char sendStr[20];
     uint8_t ready=0;
-    //sprintf(sendStr, "AT+CIPSEND=%u", length);
+    sprintf(sendStr, "AT+CIPSEND=%u", length);
     //debugSend(sendStr);
 
     flushReceiveBuffer();
-    //simSend(sendStr);
-    /*while(!ready)
+    simSend(sendStr);
+    while(!ready)
     {
-        delayMilli(100);
+        delayMilli(50);
         if(strstr(rxBuf, ">") != NULL)
         {
             ready=1;
         }
         debugSend(rxBuf);
         debugSend("waiting");
-    }*/
+    }
     debugSend("----about to send--\n");
     uint16_t i;
     for (i=0; i<length; i++)
@@ -118,7 +119,7 @@ void simEnterDataMode()
 void simExitDataMode()
 {
     delayMilliIT(1000);
-    simSend("+++");
+    simSendRaw("+++");
     delayMilliIT(1000);
 }
 void flushReceiveBuffer()
@@ -134,5 +135,15 @@ void USART2_IRQHandler (void)
     {
         rxBuf[rxBufLen++] = USART_ReceiveData(USART2);
     }
+
+}
+void nethandler_umqtt_init(struct umqtt_connection *conn)
+{
+
+	umqtt_init(conn);
+	umqtt_circ_init(&conn->txbuff);
+	umqtt_circ_init(&conn->rxbuff);
+
+	umqtt_connect(conn, 60, MQTT_CLIENT_ID);
 
 }

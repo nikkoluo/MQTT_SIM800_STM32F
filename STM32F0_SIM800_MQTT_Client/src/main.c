@@ -26,9 +26,27 @@
 	(((type) << 4) | ((dup) << 3) | ((qos) << 1) | (retain))
 
 
+uint8_t mqtt_txbuff[200];
+uint8_t mqtt_rxbuff[150];
+
+struct umqtt_connection mqtt = {
+	.txbuff = {
+		.start = mqtt_txbuff,
+		.length = sizeof(mqtt_txbuff),
+	},
+	.rxbuff = {
+		.start = mqtt_rxbuff,
+		.length = sizeof(mqtt_rxbuff),
+	},
+//	.message_callback = handle_message,
+};
+
+
 char rxData [300];
 extern char rxBuf[300];
 extern uint16_t rxBufLen;
+
+
 
 typedef enum  {
     STATE_OFF,
@@ -119,8 +137,9 @@ int main(void)
         head=i;
         sprintf(str, "%d", umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
         debugSend2(txBuf,head);
+        nethandler_umqtt_init(&mqtt);
 
-    uint8_t counter=0;
+    uint8_t counter=0, sendCount=0, strtosend[20];
     while(1)
     {
         counter++;
@@ -133,14 +152,21 @@ int main(void)
             flushReceiveBuffer();
         }
         debugSend("alive\n");
-        if(counter==15)//wait 30 sec then send connect packet
+        if(counter==5)//wait 10 sec then send connect packet
         {
-            simTransmit(txBuf, head);
+            debugSend2(mqtt_txbuff,mqtt.txbuff.datalen);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             debugSend("-Sent-");
         }
-        if(counter==20)//wait 40 sec then exit data
+        if(counter==8)//wait 100 sec then exit
         {
-            simExitDataMode();
+            if(sendCount>50) sendCount=0;
+            counter=6;
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            sprintf(strtosend, "%d", sendCount++);
+            umqtt_publish(&mqtt, "temp/random", strtosend, 2);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             debugSend("-Sent-");
         }
         //simUpdateState();
@@ -283,9 +309,8 @@ void simUpdateState()
     {
         flushReceiveBuffer();
         simSend("AT+CIPSTATUS");
-        delayMilliIT(300);
+        delayMilliIT(100);
         debugSend(rxBuf);
-        debugSend("--only here--");
         if(strstr(rxBuf, "INITIAL") != NULL) current_state = STATE_INITIAL;
         else if((strstr(rxBuf, "START") != NULL)) current_state = STATE_START;
         else if((strstr(rxBuf, "CONFIG") != NULL)) current_state = STATE_CONFIG;

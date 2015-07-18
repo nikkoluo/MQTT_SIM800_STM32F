@@ -651,47 +651,48 @@
 	"stm32f0xx_wwdg.h"
 	"stm32f0xx_rcc.h"
 
-1437038144 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\debug.c
+1437225161 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\debug.c
 	"Debug.h"
 	"stm32f0xx_conf.h"
 
-1437038144 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\debug.h
+1437225161 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\debug.h
 
-1437035149 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\delay.c
+1437224419 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\delay.c
 	"Delay.h"
 	"stm32f0xx_conf.h"
 	<stdint.h>
 
-1436973724 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\delay.h
+1437224418 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\delay.h
 	<stdint.h>
 
-1437139079 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\sim808.c
+1437228820 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\sim808.c
 	"SIM808.h"
 	"stm32f0xx_conf.h"
 	<string.h>
 	"Delay.h"
 	"umqtt.h"
+	"config.h"
 
-1437035149 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\sim808.h
+1437224419 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\sim808.h
 	<stdint.h>
 
-1437035149 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\umqtt.h
+1437225161 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\umqtt.h
 	<stdint.h>
 
 1436973526 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\system_stm32f0xx.c
 	"stm32f0xx.h"
 
-1436973724 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\umqtt.c
+1437225161 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\umqtt.c
 	<string.h>
 	"umqtt.h"
 
-1436973724 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\spl\src\stm32f0xx_usart.c
+1437224418 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\spl\src\stm32f0xx_usart.c
 	"stm32f0xx_usart.h"
 	"stm32f0xx_rcc.h"
 
-1437060230 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\startup_stm32f0xx.s
+1437224419 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\startup_stm32f0xx.s
 
-1437138664 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\main.c
+1437230001 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\main.c
 	"stm32f0xx_conf.h"
 	<stdio.h>
 	<string.h>
@@ -701,6 +702,6 @@
 	"SIM808.h"
 	"Delay.h"
 
-1436973724 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\config.h
+1437225551 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\config.h
 	"umqtt.h"
 
