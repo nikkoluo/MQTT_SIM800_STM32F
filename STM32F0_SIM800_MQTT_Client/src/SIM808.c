@@ -69,34 +69,38 @@ void simSendRaw(const char* data)
 void simTransmit(char * stringToSend, uint16_t length)
 {
     char sendStr[20];
-    uint8_t ready=0;
+    uint8_t ready=0, error=0, transmitSuccess=0;
     sprintf(sendStr, "AT+CIPSEND=%u", length);
-    //debugSend(sendStr);
-
     flushReceiveBuffer();
     simSend(sendStr);
-    while(!ready)
+    while((!ready)&&(!error))
     {
         delayMilli(50);
-        if(strstr(rxBuf, ">") != NULL)
+        if(strstr(rxBuf, ">") != NULL)//ready to send
         {
             ready=1;
         }
         if(strstr(rxBuf, "ERROR") != NULL)
         {
-            ready=1;
-            debugSend("failed to send");
+            error=1;
         }
         debugSend(rxBuf);
+        flushReceiveBuffer();
         debugSend("waiting");
     }
-    debugSend("----about to send--\n");
     uint16_t i;
-    for (i=0; i<length; i++)
+    if(!error)
     {
-        USART_SendData(USART2, stringToSend[i]);
-        while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
+        debugSend("no error");
+        for (i=0; i<length; i++)
+        {
+            USART_SendData(USART2, stringToSend[i]);
+            while (!USART_GetFlagStatus(USART2, USART_FLAG_TC));
+        }
+        delayMilli(50);
     }
+    else debugSend("error occurred");
+
 }
 void simEnterDataMode()
 {
@@ -149,6 +153,33 @@ void nethandler_umqtt_init(struct umqtt_connection *conn)
 	umqtt_circ_init(&conn->txbuff);
 	umqtt_circ_init(&conn->rxbuff);
 
-	umqtt_connect(conn, 30, MQTT_CLIENT_ID, "", "");
+	umqtt_connect(conn, 120, MQTT_CLIENT_ID, "stm", "123");
 
+}
+/** \brief This sends a command to the sim module and waits for the response.
+ *
+ * \param sendCommand
+ * \param checkResponse
+ * \param timeout in milliseconds
+ * \return
+ *
+ */
+
+int simCheckResult(char *sendCommand, char *checkResponse, uint16_t timeout)
+{
+    uint16_t counter=0;
+    flushReceiveBuffer();
+    simSend(sendCommand);
+    while((rxBufLen==0)&&(counter<timeout))
+    {
+        delayMilliIT(10);
+        counter++;
+        debugSend("awaiting response\n");
+    }
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+        if(strstr(rxBuf, checkResponse) != NULL) return 1;
+    }
+    else return 0;
 }

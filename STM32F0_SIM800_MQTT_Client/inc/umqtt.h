@@ -37,6 +37,7 @@ enum umqtt_client_state {
 	UMQTT_STATE_CONNECTING,
 	UMQTT_STATE_CONNECTED,
 	UMQTT_STATE_FAILED,
+	UMQTT_STATE_DISCONNECTED,
 };
 
 struct umqtt_circ_buffer {

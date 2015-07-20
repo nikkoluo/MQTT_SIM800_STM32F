@@ -15,7 +15,7 @@
  * */
 
 #include <string.h>
-
+#include "Debug.h"
 #include "umqtt.h"
 
 #define umqtt_insert_messageid(conn, ptr) \
@@ -134,7 +134,7 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid, ch
 	uint8_t fixed;
 	uint8_t remlen[4];
 	uint8_t variable[12];
-	uint8_t payload[2 + payloadlen];
+	uint8_t payload[6 + payloadlen];
 
 	fixed = umqtt_build_header(UMQTT_CONNECT, 0, 0, 0);
 
@@ -149,7 +149,7 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid, ch
 
 	variable[8] = 3; /* Protocol version */
 
-	variable[9] = 0b00000010; /* Clean session flag */
+	variable[9] = 0b11000010; /* Clean session flag */
 
 	variable[10] = kalive >> 8; /* Keep Alive timer */
 	variable[11] = kalive & 0xff;
@@ -162,9 +162,9 @@ void umqtt_connect(struct umqtt_connection *conn, uint16_t kalive, char *cid, ch
 	payload[3+cidlen] = usrlen & 0xff;
     memcpy(&payload[4+cidlen], usrnm, usrlen);
 
-    payload[4+cidlen+usrlen] = 0;
-	payload[5+cidlen+usrlen] = 3;
-    memcpy(&payload[6+cidlen + usrlen],passwd, passwdlen);
+    payload[14] = 0;
+	payload[15] = 3;
+    memcpy(&payload[16],passwd, 3);
 
 	umqtt_circ_push(&conn->txbuff, &fixed, 1);
 	umqtt_circ_push(&conn->txbuff, remlen, umqtt_encode_length(sizeof(variable) + sizeof(payload), remlen));
@@ -227,6 +227,13 @@ void umqtt_ping(struct umqtt_connection *conn)
 
 	umqtt_circ_push(&conn->txbuff, packet, sizeof(packet));
 	conn->nack_ping++;
+}
+
+void umqtt_disconnect(struct umqtt_connection *conn)
+{
+	uint8_t packet[] = { umqtt_build_header(UMQTT_DISCONNECT, 0, 0, 0), 0 };
+
+	umqtt_circ_push(&conn->txbuff, packet, sizeof(packet));
 }
 
 static void umqtt_handle_publish(struct umqtt_connection *conn,

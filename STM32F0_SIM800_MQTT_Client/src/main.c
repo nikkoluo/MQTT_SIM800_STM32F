@@ -45,11 +45,12 @@ struct umqtt_connection mqtt = {
 char rxData [300];
 extern char rxBuf[300];
 extern uint16_t rxBufLen;
-
+extern char receivedDebug[200];
 
 
 typedef enum  {
     STATE_OFF,
+    STATE_ON,
 	STATE_INITIAL,
 	STATE_START,
 	STATE_CONFIG,
@@ -62,7 +63,7 @@ typedef enum  {
 	STATE_PDPDEACT,
 } tcp_state;
 //set to off if you dont want to activate the sim808
-tcp_state current_state = STATE_INITIAL;
+tcp_state current_state = STATE_OFF;
 
 int main(void)
 {
@@ -75,64 +76,128 @@ int main(void)
 
     debugSend("begin\n");
 
+    while(current_state==STATE_OFF)
+    {
+        if (simCheckResult("AT", "OK", 100))
+        {
+            current_state = STATE_ON;
+            debugSend("sim is responding\n");
+        }
+        else
+        {
+            current_state=STATE_OFF;
+            debugSend("sim not responding\n");
+        }
 
-    simSend("AT");
-    delayMilliIT(10);
+        if(rxBufLen>0) debugSend(rxBuf);
+        flushReceiveBuffer();
+
+        delayMilliIT(500);
+    }
+
+    while(current_state==STATE_ON)
+    {
+        if (simCheckResult("ATE0", "OK", 100))
+        {
+            current_state = STATE_INITIAL;
+            debugSend("sim Echo is off\n");
+        }
+        else
+        {
+            current_state=STATE_ON;
+            debugSend("failed to turn echo off\n");
+        }
+
+        if(rxBufLen>0) debugSend(rxBuf);
+        flushReceiveBuffer();
+        delayMilliIT(500);
+    }
+
+
+    if (simCheckResult("AT+CREG?", "0,1",10))//check if sim is registered
+    {
+
+        debugSend("sim is registered\n");
+
+        if (simCheckResult("AT+CGATT=1", "OK",1000))// wait 10 seconds max
+        {
+            debugSend("GPRS is attached\n");
+
+            if (simCheckResult("AT+CIPSHUT", "SHUT OK",2000))
+            {
+                debugSend("GPRS is shut down\n");
+            }
+            else debugSend("GPRS is not shut down\n");
+        }
+        else debugSend("GPRS is not attached\n");
+    }
+    else debugSend("not registered\n");
+
     if(rxBufLen>0) debugSend(rxBuf);
-    flushReceiveBuffer();
+
+    delayMilliIT(10000);
 
     simUpdateState();
     if(current_state!=STATE_CONNECTED) simConnect1();
 
     delayMilliIT(2000);
-
-
     nethandler_umqtt_init(&mqtt);
+    debugSend2(mqtt_txbuff,mqtt.txbuff.datalen);
+    simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 
+    delayMilliIT(2000);
+    mqtt.txbuff.pointer= mqtt.txbuff.start;
+    mqtt.txbuff.datalen=0;
+    umqtt_subscribe(&mqtt, "test/gps");
+    simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+    debugSend("-subscribed-");
     uint8_t counter=0, sendCount=0, strtosend[20], alive=1;
     while(alive==1)
     {
         counter++;
-        delayMilliIT(2000);
-        if(strstr(rxBuf, "ERROR") != NULL) alive=0;//Kill on error
+        delayMilliIT(1000);
+        if(strstr(receivedDebug, "X") != NULL) alive=0;//Kill on error
         if(rxBufLen>0)//receive any unexpected data
         {
+            if(strstr(rxBuf, "*UP") != NULL) debugSend("---Just received UP command");
+            if(strstr(rxBuf, "*DWN") != NULL) debugSend("---Just received DWN command");
             debugSend("\n\n");
             debugSend(rxBuf);
             debugSend("\n\n");
             flushReceiveBuffer();
         }
         debugSend("alive\n");
-        if(counter==5)//wait 10 sec then send connect packet
-        {
-            debugSend2(mqtt_txbuff,mqtt.txbuff.datalen);
-            mqtt_txbuff[29]=3;
-            mqtt_txbuff[30]=1;
-            mqtt_txbuff[31]=2;
-            mqtt_txbuff[32]=3;
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            debugSend("-Sent-");
-        }
-        if(counter==8)//wait 100 sec then exit
+        if(counter%3==0)//wait 100 sec then exit
         {
             if(sendCount>50) sendCount=0;
-            counter=6;
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             sprintf(strtosend, "%d", sendCount++);
-            umqtt_publish(&mqtt, "temp/random", strtosend, 2);
+            umqtt_publish(&mqtt, "test/gps", strtosend, 2);
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             debugSend("-Sent-");
         }
-        if(sendCount>=5)
+
+        if(counter%30==0)//every 10 sec send ping request
         {
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            umqtt_ping(&mqtt);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+            debugSend("-ping-");
+        }
+
+        if(counter>=150)
+        {
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            umqtt_disconnect(&mqtt);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+            debugSend("-disconnect-");
             alive=0;//kill
         }
-        //simUpdateState();
-        //if(current_state!=STATE_CONNECTED) simConnect1();
     }
-    simSend("AT+CIPSHUT");
-    simSend("AT+CIPSHUT");
+    simSend("AT+CIPCLOSE");
     debugSend("-exiting-");
 }
 
@@ -156,27 +221,12 @@ void gpioInit()
 
 
 }
-int umqtt_encode_length(int len, uint8_t *data)
-{
-	int digit;
-	int i = 0;
 
-	do {
-		digit = len % 128;
-		len /= 128;
-		if (len > 0)
-			digit |= 0x80;
-		data[i] = digit;
-		i++;
-	} while (len);
-
-	return i; /* Return the amount of bytes used */
-}
 
 void simConnect1()
 {
-    //char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-    char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
+    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+    //char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
     int flag_Connected=0;
     if(current_state!=STATE_OFF)
     {
@@ -229,6 +279,7 @@ void simConnect1()
                 case STATE_STATUS:
                     flushReceiveBuffer();
                     debugSend("\n--statusing--\n");
+                    delayMilliIT(100);
                     simSend(connString);
                     delayMilliIT(30);
                     debugSend(rxBuf);
@@ -258,6 +309,9 @@ void simConnect1()
                     delayMilliIT(30);
                     debugSend(rxBuf);
                     flag_Connected=0;
+                    break;
+                default:
+                    debugSend("default state..");
                     break;
             }
         }
