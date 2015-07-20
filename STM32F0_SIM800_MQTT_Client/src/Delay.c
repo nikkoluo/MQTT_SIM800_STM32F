@@ -2,6 +2,9 @@
 #include "stm32f0xx_conf.h"
 #include <stdint.h>
 static volatile uint32_t TimingDelay;
+uint8_t msgTimout=0;
+
+
 void initDelay()
 {
     //Delay init with NVIC
@@ -32,8 +35,12 @@ void TimingDelay_Decrement(void) {
 	}
 }
 
+void delayIncCounter(struct timing *tim)
+{
 
+}
 
 void SysTick_Handler(void) {
 	TimingDelay_Decrement();
+	if(msgTimout<20) msgTimout++;
 }

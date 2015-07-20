@@ -25,7 +25,7 @@
 #define umqtt_build_header(type, dup, qos, retain) \
 	(((type) << 4) | ((dup) << 3) | ((qos) << 1) | (retain))
 
-
+extern uint8_t msgTimout;
 uint8_t mqtt_txbuff[200];
 uint8_t mqtt_rxbuff[150];
 
@@ -43,10 +43,9 @@ struct umqtt_connection mqtt = {
 
 
 char rxData [300];
-extern char rxBuf[1000];
+extern char rxBuf[300];
 extern uint16_t rxBufLen;
 extern char receivedDebug[200];
-
 
 typedef enum  {
     STATE_OFF,
@@ -64,7 +63,6 @@ typedef enum  {
 } tcp_state;
 //set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_OFF;
-
 int main(void)
 {
     uint16_t index=0;
@@ -74,153 +72,27 @@ int main(void)
     debugInit();
     simInit();
 
-    if (simCheckResult("AT+IFC=2,2", "OK", 100))
-    {
-        current_state = STATE_INITIAL;
-        debugSend("FLow Activated\n");
-    }
-    else
-    {
-        current_state=STATE_ON;
-        debugSend("Flow not activated\n");
-    }
+    debugSend("\nbegin\n");
+    delayMilliIT(500);
 
-    debugSend("begin\n");
-    if(simPing()==1)
+    while(1)
     {
-        debugSend("ALIVE");
-        current_state = STATE_ON;
-
-    }
-    else
-    {
-        debugSend("DEAD");
-        debugSend(rxBuf);
-        delayMilliIT(1000);
-        NVIC_SystemReset();
-    }
-
-    while(current_state==STATE_ON)
-    {
-        if (simCheckResult("ATE0", "OK", 100))
-        {
-            current_state = STATE_INITIAL;
-            debugSend("sim Echo is off\n");
+    ///PING "AT"
+        if(simPing())
+        {///IF SUCCCESS THEN PING TCP CONNECED
+            debugSend("ping-resp");
+            current_state = STATE_ON;
         }
         else
-        {
-            current_state=STATE_ON;
-            debugSend("failed to turn echo off\n");
+        {///IF NO PING RESPONSE THEN ??
+            debugSend("ping-NO-resp");
+            current_state = STATE_OFF;
         }
 
-        if(rxBufLen>0) debugSend(rxBuf);
-        flushReceiveBuffer();
+
+
+
     }
-
-
-    if (simCheckResult("AT+CREG?", "0,1",10))//check if sim is registered
-    {
-
-        debugSend("sim is registered\n");
-
-        if (simCheckResult("AT+CGATT=1", "OK",1000))// wait 10 seconds max
-        {
-            debugSend("GPRS is attached\n");
-
-            if (simCheckResult("AT+CIPSHUT", "SHUT OK",2000))
-            {
-                debugSend("GPRS is shut down\n");
-            }
-            else debugSend("GPRS is not shut down\n");
-        }
-        else debugSend("GPRS is not attached\n");
-    }
-    else debugSend("not registered\n");
-
-    if(rxBufLen>0) debugSend(rxBuf);
-
-    if (simCheckResult("AT+CIPRXGET=1", "OK", 100))
-        {
-            debugSend("manual get tcp is on\n");
-        }
-        else
-        {
-            current_state=STATE_ON;
-            debugSend("failed to turn on manual get tcp\n");
-        }
-        if(rxBufLen>0) debugSend(rxBuf);
-        flushReceiveBuffer();
-
-    delayMilliIT(2000);
-
-    simUpdateState();
-    if(current_state!=STATE_CONNECTED) simConnect1();
-
-    delayMilliIT(2000);
-    nethandler_umqtt_init(&mqtt);
-    debugSend2(mqtt_txbuff,mqtt.txbuff.datalen);
-    simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-    while(simWaitSendSuccess()==0)
-    {
-        simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-    }
-
-
-
-    delayMilliIT(2000);
-    mqtt.txbuff.pointer= mqtt.txbuff.start;
-    mqtt.txbuff.datalen=0;
-    umqtt_subscribe(&mqtt, "test/gps");
-    simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-    debugSend("-subscribed-");
-    uint8_t counter=0, sendCount=0, strtosend[20], alive=1;
-    while(alive==1)
-    {
-        counter++;
-        delayMilliIT(1000);
-        if(strstr(receivedDebug, "X") != NULL) alive=0;//Kill on error
-        if(rxBufLen>0)//receive any unexpected data
-        {
-            if(strstr(rxBuf, "*UP") != NULL) debugSend("---Just received UP command");
-            if(strstr(rxBuf, "*DWN") != NULL) debugSend("---Just received DWN command");
-            debugSend("\n\n");
-            debugSend(rxBuf);
-            debugSend("\n\n");
-            flushReceiveBuffer();
-        }
-        debugSend("alive\n");
-        if(counter%3==0)//wait 100 sec then exit
-        {
-            if(sendCount>50) sendCount=0;
-            mqtt.txbuff.pointer= mqtt.txbuff.start;
-            mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "%d", sendCount++);
-            umqtt_publish(&mqtt, "test/gps", strtosend, 2);
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            debugSend("-Sent-");
-        }
-
-        if(counter%30==0)//every 10 sec send ping request
-        {
-            mqtt.txbuff.pointer= mqtt.txbuff.start;
-            mqtt.txbuff.datalen=0;
-            umqtt_ping(&mqtt);
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            debugSend("-ping-");
-        }
-
-        if(counter>=150)
-        {
-            mqtt.txbuff.pointer= mqtt.txbuff.start;
-            mqtt.txbuff.datalen=0;
-            umqtt_disconnect(&mqtt);
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            debugSend("-disconnect-");
-            alive=0;//kill
-        }
-    }
-    simSend("AT+CIPCLOSE");
-    debugSend("-exiting-");
 }
 
 void gpioInit()

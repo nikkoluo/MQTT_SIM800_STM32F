@@ -14,10 +14,9 @@
 #include "config.h"
 
 
-char rxBuf[1000];
-uint16_t rxBufLen;
-
-
+char rxBuf[300];
+uint16_t rxBufLen =0;
+extern uint8_t msgTimout;
 
 void simInit(void)
 {
@@ -34,7 +33,7 @@ void simInit(void)
         USART_InitStruct.USART_StopBits = USART_StopBits_1;
         USART_InitStruct.USART_Parity = USART_Parity_No;
         USART_InitStruct.USART_Mode = USART_Mode_Tx|USART_Mode_Rx;
-        USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_RTS_CTS;
+        USART_InitStruct.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
     USART_Init(USART2, &USART_InitStruct);
     USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART2, ENABLE);
@@ -136,11 +135,26 @@ void flushReceiveBuffer()
     rxBufLen=0;
 }
 
+uint8_t simAvailable(void)
+{
+    if((rxBufLen>0)&&(msgTimout>=5))
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+
+
+}
+
 void USART2_IRQHandler (void)
 {
     if(USART_GetITStatus(USART2, USART_IT_RXNE)!= RESET)
     {
         rxBuf[rxBufLen++] = USART_ReceiveData(USART2);
+        msgTimout=0;
     }
 
 }
@@ -185,19 +199,22 @@ uint8_t simCheckResult(char *sendCommand, char *checkResponse, uint16_t timeout)
 uint8_t simPing(void)
 {
     uint16_t counter=0;
+
     flushReceiveBuffer();
     simSend("AT");
-    delayMilliIT(30);
-    while((rxBufLen==0)&&(counter<1000))
+    while(simAvailable()==0)
     {
-        delayMilliIT(30);
         counter++;
+        if (counter > 65000)
+        {
+            return 0;
+        }
     }
+
     if(rxBufLen>0)
     {
         if(strstr(rxBuf, "\r\nOK\r\n") != NULL) return 1;
     }
-    else return 0;
 }
 
 
