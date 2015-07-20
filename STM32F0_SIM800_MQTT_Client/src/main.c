@@ -43,7 +43,7 @@ struct umqtt_connection mqtt = {
 
 
 char rxData [300];
-extern char rxBuf[300];
+extern char rxBuf[1000];
 extern uint16_t rxBufLen;
 extern char receivedDebug[200];
 
@@ -74,25 +74,30 @@ int main(void)
     debugInit();
     simInit();
 
-    debugSend("begin\n");
-
-    while(current_state==STATE_OFF)
+    if (simCheckResult("AT+IFC=2,2", "OK", 100))
     {
-        if (simCheckResult("AT", "OK", 100))
-        {
-            current_state = STATE_ON;
-            debugSend("sim is responding\n");
-        }
-        else
-        {
-            current_state=STATE_OFF;
-            debugSend("sim not responding\n");
-        }
+        current_state = STATE_INITIAL;
+        debugSend("FLow Activated\n");
+    }
+    else
+    {
+        current_state=STATE_ON;
+        debugSend("Flow not activated\n");
+    }
 
-        if(rxBufLen>0) debugSend(rxBuf);
-        flushReceiveBuffer();
+    debugSend("begin\n");
+    if(simPing()==1)
+    {
+        debugSend("ALIVE");
+        current_state = STATE_ON;
 
-        delayMilliIT(500);
+    }
+    else
+    {
+        debugSend("DEAD");
+        debugSend(rxBuf);
+        delayMilliIT(1000);
+        NVIC_SystemReset();
     }
 
     while(current_state==STATE_ON)
@@ -110,7 +115,6 @@ int main(void)
 
         if(rxBufLen>0) debugSend(rxBuf);
         flushReceiveBuffer();
-        delayMilliIT(500);
     }
 
 
@@ -135,7 +139,19 @@ int main(void)
 
     if(rxBufLen>0) debugSend(rxBuf);
 
-    delayMilliIT(10000);
+    if (simCheckResult("AT+CIPRXGET=1", "OK", 100))
+        {
+            debugSend("manual get tcp is on\n");
+        }
+        else
+        {
+            current_state=STATE_ON;
+            debugSend("failed to turn on manual get tcp\n");
+        }
+        if(rxBufLen>0) debugSend(rxBuf);
+        flushReceiveBuffer();
+
+    delayMilliIT(2000);
 
     simUpdateState();
     if(current_state!=STATE_CONNECTED) simConnect1();
@@ -144,6 +160,12 @@ int main(void)
     nethandler_umqtt_init(&mqtt);
     debugSend2(mqtt_txbuff,mqtt.txbuff.datalen);
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+    while(simWaitSendSuccess()==0)
+    {
+        simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+    }
+
+
 
     delayMilliIT(2000);
     mqtt.txbuff.pointer= mqtt.txbuff.start;
@@ -216,7 +238,7 @@ void gpioInit()
         GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
         GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
         GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
-        GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+        GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 
@@ -326,7 +348,7 @@ void simUpdateState()
     {
         flushReceiveBuffer();
         simSend("AT+CIPSTATUS");
-        delayMilliIT(300);
+        delayMilliIT(100);
         debugSend(rxBuf);
         if(strstr(rxBuf, "INITIAL") != NULL) current_state = STATE_INITIAL;
         else if((strstr(rxBuf, "START") != NULL)) current_state = STATE_START;

@@ -2,7 +2,6 @@
 #include "stm32f0xx_conf.h"
 #include <stdint.h>
 static volatile uint32_t TimingDelay;
-
 void initDelay()
 {
     //Delay init with NVIC
@@ -32,6 +31,8 @@ void TimingDelay_Decrement(void) {
 		TimingDelay--;
 	}
 }
+
+
 
 void SysTick_Handler(void) {
 	TimingDelay_Decrement();
