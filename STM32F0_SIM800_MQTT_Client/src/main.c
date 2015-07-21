@@ -54,7 +54,7 @@ extern char receivedDebug[200];
 tcp_state current_state = STATE_OFF;
 int main(void)
 {
-    uint8_t flagNetReg=0, flagAlive=0;
+    uint8_t flagNetReg=0, flagAlive=0, strtosend[20];
     uint16_t index=0;
 ////initialize
     initDelay();
@@ -64,53 +64,8 @@ int main(void)
     debugSend("\nbegin\n");
     delayMilliIT(500);
 
-///CHECK STATUS OF SIM
-    if(simPing())
-    {///IF SUCCCESS THEN TEST NETWORK REGISTRATION
-        debugSend("ping-resp");
-        current_state = STATE_ON;
-    }
-    else
-    {///IF NO PING RESPONSE THEN ??
-        debugSend("ping-NO-resp\n");
-        NVIC_SystemReset();
-    }
-    if(simNoEcho()==0)
-    {
-        ///if the sim is not registered then Reboot microcontroller
-        debugSend("Echo not disabled\n");
-        debugSend(rxBuf);
-        NVIC_SystemReset();
-    }
+    checkInitalStatus();
 
-    ///IF STATUS IS FINE THEN INITIALISE THE SIM
-    if(simNetReg()==0)
-    {
-        ///if the sim is not registered then Reboot microcontroller
-        debugSend("Not registered so rebooting\n");
-        debugSend(rxBuf);
-        NVIC_SystemReset();
-    }
-    ///the device is registered so check if GPRS is attached.
-    debugSend("device is registered\n");
-    if(simGPRSAttached()==0)
-    {
-        ///if GPRS is NOT attached then reboot microcontroller
-        debugSend("GPRS not attached - rebooting\n");
-        simSend("AT+CGATT=1");///Try attach the GPRS service
-        delayMilliIT(100);
-        debugSend(rxBuf);
-        delayMilliIT(100);
-        NVIC_SystemReset();
-    }
-    debugSend("GPRS is attached\n");
-
-    if(simResetIPSession()==0)
-    {
-        ///Not able to reset the IP Session
-        NVIC_SystemReset();
-    }
-    debugSend("--IP session reset--");
 
     ///check what state the TCP is in.
     whatStateAmIIn();
@@ -132,13 +87,16 @@ int main(void)
     mqtt.txbuff.datalen=0;
     umqtt_subscribe(&mqtt, "test/action");
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-
-    uint32_t counter=0;
+    recievePacket();
+    uint8_t counter=0;
 
     while(1)
     {
         delayMilliIT(500);
+
         counter++;
+        if(counter>=99) counter=0;
+
         ///PING "AT"
         if(simPing()==0)
         {///IF NO PING RESPONSE THEN RESET
@@ -151,20 +109,29 @@ int main(void)
             debugSend("connection no longer alive\n");
             NVIC_SystemReset();
         }
+
+        recievePacket();
         ///MQTT PING
-        if(counter%20==0)
+        if(counter%60==0)
         {
             debugSend("\n-ping-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             umqtt_ping(&mqtt);
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-
+            recievePacket();
         }
-
-
-
-
+        ///MQTT Tranmit packet
+        if(counter%30==0)
+        {
+            debugSend("\n-transmit-");
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            sprintf(strtosend, "%d", counter);
+            umqtt_publish(&mqtt, "test/gps", strtosend, 2);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+            recievePacket();
+        }
     }
 }
 
@@ -217,12 +184,7 @@ void simConnect()
     flushReceiveBuffer();
     simSend("AT+CIICR");
     while(simAvailable()==0);
-  /*    if(strstr(rxBuf, "AT+CIICR") != NULL)
-    {
-        debugSend(rxBuf);
-        flushReceiveBuffer();
-        while(simAvailable()==0);
-    }*/
+
     if(strstr(rxBuf, "OK") != NULL)
     {
         debugSend("successful CIICR");
@@ -301,3 +263,88 @@ void whatStateAmIIn()
     }
 }
 
+void checkInitalStatus(void)
+{
+
+///CHECK STATUS OF SIM
+    if(simPing())
+    {///IF SUCCCESS THEN TEST NETWORK REGISTRATION
+        debugSend("ping-resp");
+        current_state = STATE_ON;
+    }
+    else
+    {///IF NO PING RESPONSE THEN ??
+        debugSend("ping-NO-resp\n");
+        NVIC_SystemReset();
+    }
+    if(simNoEcho()==0)
+    {
+        ///if the sim is not registered then Reboot microcontroller
+        debugSend("Echo not disabled\n");
+        debugSend(rxBuf);
+        NVIC_SystemReset();
+    }
+
+    ///IF STATUS IS FINE THEN INITIALISE THE SIM
+    if(simNetReg()==0)
+    {
+        ///if the sim is not registered then Reboot microcontroller
+        debugSend("Not registered so rebooting\n");
+        debugSend(rxBuf);
+        NVIC_SystemReset();
+    }
+    ///the device is registered so check if GPRS is attached.
+    debugSend("device is registered\n");
+    if(simGPRSAttached()==0)
+    {
+        ///if GPRS is NOT attached then reboot microcontroller
+        debugSend("GPRS not attached - rebooting\n");
+        simSend("AT+CGATT=1");///Try attach the GPRS service
+        delayMilliIT(100);
+        debugSend(rxBuf);
+        delayMilliIT(100);
+        NVIC_SystemReset();
+    }
+    debugSend("GPRS is attached\n");
+
+    if(simResetIPSession()==0)
+    {
+        ///Not able to reset the IP Session
+        NVIC_SystemReset();
+    }
+    debugSend("--IP session reset--");
+
+
+    ///Disable the auto send packet
+    flushReceiveBuffer();
+    simSend("AT+CIPRXGET=1");
+    while(simAvailable()==0);
+    if(strstr(rxBuf, "OK") != NULL)
+    {
+        debugSend("successful manual TCP get\n");
+
+    }
+    else
+    {
+        debugSend(rxBuf);
+        NVIC_SystemReset();
+
+    }
+}
+
+void recievePacket(void)
+{
+    char TCPLen[2];
+    ///Receive TCP RX
+    flushReceiveBuffer();
+    simSend("AT+CIPRXGET=2,100");
+    while(simAvailable()==0);
+
+    memcpy(&TCPLen[0], &rxBuf[15], 2);
+
+    debugSend(TCPLen);
+
+
+
+
+}

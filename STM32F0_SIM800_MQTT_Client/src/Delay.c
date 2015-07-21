@@ -35,11 +35,6 @@ void TimingDelay_Decrement(void) {
 	}
 }
 
-void delayIncCounter(struct timing *tim)
-{
-
-}
-
 void SysTick_Handler(void) {
 	TimingDelay_Decrement();
 	if(msgTimout<20) msgTimout++;
