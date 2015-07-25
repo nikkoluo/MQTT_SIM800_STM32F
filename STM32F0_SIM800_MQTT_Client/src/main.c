@@ -56,6 +56,7 @@ int main(void)
 {
     uint8_t flagNetReg=0, flagAlive=0, strtosend[20];
     uint16_t index=0;
+    double lng, lat;
 ////initialize
     initDelay();
     gpioInit();
@@ -74,6 +75,7 @@ int main(void)
     ///Authenticate with the MQTT broker
     nethandler_umqtt_init(&mqtt);
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+    recievePacket();
     if(strstr(rxBuf, connackAccept) != NULL)
         debugSend("MQTT Connection accepted");
     else
@@ -109,28 +111,22 @@ int main(void)
             debugSend("connection no longer alive\n");
             NVIC_SystemReset();
         }
-
+        ///Receive any subscribed packets
         recievePacket();
-        ///MQTT PING
-        if(counter%60==0)
-        {
-            debugSend("\n-ping-");
-            mqtt.txbuff.pointer= mqtt.txbuff.start;
-            mqtt.txbuff.datalen=0;
-            umqtt_ping(&mqtt);
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            recievePacket();
-        }
+
+        ///Get GPS Coords
+
+
         ///MQTT Tranmit packet
         if(counter%30==0)
         {
             debugSend("\n-transmit-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "%d", counter);
-            umqtt_publish(&mqtt, "test/gps", strtosend, 2);
+            //sprintf(strtosend, "%d", counter);
+            parseData(strtosend, "latcoord", "lngcoor", "placehold", "placehold");
+            umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            recievePacket();
         }
     }
 }
@@ -334,17 +330,48 @@ void checkInitalStatus(void)
 
 void recievePacket(void)
 {
-    char TCPLen[2];
+    uint8_t rxPacketLen=1, i, commaCount=0, commaPos[10], temp[2], mqttPacket[100];
     ///Receive TCP RX
     flushReceiveBuffer();
     simSend("AT+CIPRXGET=2,100");
     while(simAvailable()==0);
 
-    memcpy(&TCPLen[0], &rxBuf[15], 2);
 
-    debugSend(TCPLen);
+    if(rxBuf[16]==0x2C)
+    {
+        //One digit length
+        rxPacketLen = (rxBuf[15])&0x0F;
+    }
+    else if (rxBuf[17]==0x2C)
+    {
+        //Two digits long
+        rxPacketLen = (rxBuf[16])&0x0F;//ones position
+        rxPacketLen += 10*((rxBuf[15])&0x0F);// tens position
+    }
+    else
+    {
+        temp[0]=0;
+        temp[1]=0;
+        rxPacketLen=0;
+    }
+
+    memcpy(&mqttPacket[0], &rxBuf[21], rxPacketLen);
+    if(rxPacketLen>0)
+    {
+        debugSend("Packet: ");
+        debugSend2(mqttPacket,rxPacketLen);
+        USART_SendData(USART1, rxPacketLen);
+        debugSend("\n");
+    }
 
 
 
 
+}
+
+
+void parseData(char *payload, char *latitude , char *longitude, char *altitude, char *battery)
+{
+
+    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, 1000+rand()%1000, 80+rand()%30);
 }

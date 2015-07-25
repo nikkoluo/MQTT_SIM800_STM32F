@@ -83,13 +83,12 @@ void simTransmit(char * stringToSend, uint16_t length)
         while(simAvailable()==0);//read the response
         if(strstr(rxBuf, "SEND OK") != NULL)
         {
-            debugSend("\n\nacknowledge\n");
-            debugSend(rxBuf);
+            debugSend(" acknowledge\n");
         }
     }
     if(strstr(rxBuf, "ERROR") != NULL)
     {
-        debugSend("send acknowledge not received");
+        debugSend(" send acknowledge not received");
         NVIC_SystemReset();
     }
 

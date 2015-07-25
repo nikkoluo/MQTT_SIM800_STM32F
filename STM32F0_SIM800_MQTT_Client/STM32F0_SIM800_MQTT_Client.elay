@@ -66,12 +66,12 @@
 			<Cursor1 position="1002" topLine="204" />
 		</Cursor>
 	</File>
-	<File name="SPL\src\stm32f0xx_usart.c" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="SPL\src\stm32f0xx_usart.c" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="71107" topLine="1703" />
 		</Cursor>
 	</File>
-	<File name="cmsis\core_cm0.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="cmsis\core_cm0.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="29782" topLine="593" />
 		</Cursor>
@@ -91,7 +91,7 @@
 			<Cursor1 position="184" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="inc\SIM808.h" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="inc\SIM808.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="210" topLine="0" />
 		</Cursor>
@@ -108,37 +108,32 @@
 	</File>
 	<File name="inc\umqtt.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1184" topLine="33" />
+			<Cursor1 position="1184" topLine="10" />
 		</Cursor>
 	</File>
-	<File name="src\Debug.c" open="1" top="0" tabpos="12" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\Debug.c" open="1" top="0" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="155" topLine="0" />
+			<Cursor1 position="1177" topLine="43" />
 		</Cursor>
 	</File>
 	<File name="src\Delay.c" open="1" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="669" topLine="0" />
+			<Cursor1 position="641" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="src\SIM808.c" open="1" top="0" tabpos="13" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="4747" topLine="192" />
+			<Cursor1 position="2558" topLine="70" />
 		</Cursor>
 	</File>
-	<File name="src\main.c" open="1" top="1" tabpos="11" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\main.c" open="1" top="0" tabpos="12" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1592" topLine="68" />
+			<Cursor1 position="9759" topLine="339" />
 		</Cursor>
-		<Folding>
-			<Collapse line="98" />
-			<Collapse line="120" />
-			<Collapse line="217" />
-		</Folding>
 	</File>
 	<File name="src\startup_stm32f0xx.S" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="6141" topLine="151" />
+			<Cursor1 position="6141" topLine="139" />
 		</Cursor>
 	</File>
 	<File name="src\system_stm32f0xx.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -148,7 +143,7 @@
 	</File>
 	<File name="src\umqtt.c" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="6344" topLine="177" />
+			<Cursor1 position="7700" topLine="256" />
 		</Cursor>
 	</File>
 </EmBlocks_layout_file>
