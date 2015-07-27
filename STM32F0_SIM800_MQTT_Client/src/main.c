@@ -19,6 +19,7 @@
 #include "Debug.h"
 #include "SIM808.h"
 #include "Delay.h"
+#include "servo.h"
 
 #define LINEMAX 50
 
@@ -62,6 +63,7 @@ int main(void)
     gpioInit();
     debugInit();
     simInit();
+    servoInit();
     debugSend("\nbegin\n");
     delayMilliIT(500);
 
@@ -113,7 +115,6 @@ int main(void)
         }
         ///Receive any subscribed packets
         recievePacket();
-
         ///Get GPS Coords
 
 
@@ -139,10 +140,12 @@ void gpioInit()
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX2
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1); // TIM3_CH1
+
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX1
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX1
     GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_9|GPIO_Pin_10;
+        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_6|GPIO_Pin_9|GPIO_Pin_10;
         GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
         GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
         GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
@@ -362,6 +365,26 @@ void recievePacket(void)
         debugSend2(mqttPacket,rxPacketLen);
         USART_SendData(USART1, rxPacketLen);
         debugSend("\n");
+        if(mqttPacket[1]==0X11)
+        {
+            debugSend("- - - going places\n");
+        }
+        if(mqttPacket[18]=='X')
+        {
+            servoUp();
+            debugSend("- - - going up\n");
+        }
+        if(mqttPacket[18]=='N')
+        {
+            debugSend("- - - going down");
+            servoDown();
+
+        }
+        if(mqttPacket[18]=='P')
+        {
+            servoDrop();
+            debugSend("- - - going drop");
+        }
     }
 
 
