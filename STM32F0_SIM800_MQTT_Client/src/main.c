@@ -63,7 +63,7 @@ int main(void)
     gpioInit();
     debugInit();
     simInit();
-    servoInit();
+
     debugSend("\nbegin\n");
     delayMilliIT(500);
 
@@ -86,6 +86,8 @@ int main(void)
         NVIC_SystemReset();
     }
 
+    servoInit();
+
     ///Subscribe to "test/action" topic
     mqtt.txbuff.pointer= mqtt.txbuff.start;
     mqtt.txbuff.datalen=0;
@@ -96,10 +98,10 @@ int main(void)
 
     while(1)
     {
-        delayMilliIT(500);
+        delayMilliIT(100);//why? i dont know..
 
         counter++;
-        if(counter>=99) counter=0;
+        if(counter>=200) counter=0;
 
         ///PING "AT"
         if(simPing()==0)
@@ -119,7 +121,7 @@ int main(void)
 
 
         ///MQTT Tranmit packet
-        if(counter%30==0)
+        if(counter%199==0)
         {
             debugSend("\n-transmit-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;

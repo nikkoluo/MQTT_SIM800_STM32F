@@ -22,7 +22,7 @@ void servoInit()
     TIM_OCInitTypeDef TIM_OCInitStruct;
     TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM2;
     TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
-    TIM_OCInitStruct.TIM_Pulse = 600;
+    TIM_OCInitStruct.TIM_Pulse = 900;
     TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
     TIM_OC1Init(TIM3, &TIM_OCInitStruct);
 
@@ -40,17 +40,17 @@ void servoSet(uint16_t nsOnTime)
 
 void servoUp()
 {
-    servoSet(1000);
+    servoSet(1795);
 }
 
 
 void servoDown()
 {
-    servoSet(500);
+    servoSet(1360);
 }
 
 
 void servoDrop()
 {
-    servoSet(1900);
+    servoSet(1040);
 }
