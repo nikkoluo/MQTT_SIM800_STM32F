@@ -136,6 +136,7 @@ int main(void)
 
 void gpioInit()
 {
+    ///PORT A
     //USART 1 and 2
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS2
@@ -143,7 +144,6 @@ void gpioInit()
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1); // TIM3_CH1
-
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX1
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX1
     GPIO_InitTypeDef GPIO_InitStruct;
@@ -154,6 +154,14 @@ void gpioInit()
         GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+
+    ///PORT B
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_1);//I2C1_SCL
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);//I2C1_SDA
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
+    //GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;  //???
+    GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

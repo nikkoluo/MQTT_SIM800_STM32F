@@ -1,0 +1,6 @@
+#ifndef BAROMETER_H_INCLUDED
+#define BAROMETER_H_INCLUDED
+
+
+
+#endif /* BAROMETER_H_INCLUDED */

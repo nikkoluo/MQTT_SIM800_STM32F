@@ -3081,6 +3081,21 @@ Discarded input sections
  .debug_macro   0x00000000      0x353 obj\debug\src\sim808.o
  .debug_macro   0x00000000       0x34 obj\debug\src\sim808.o
  .debug_macro   0x00000000       0x3a obj\debug\src\sim808.o
+ .group         0x00000000        0x8 obj\debug\src\barometer.o
+ .text          0x00000000        0x0 obj\debug\src\barometer.o
+ .data          0x00000000        0x0 obj\debug\src\barometer.o
+ .bss           0x00000000        0x0 obj\debug\src\barometer.o
+ .debug_info    0x00000000       0x21 obj\debug\src\barometer.o
+ .debug_abbrev  0x00000000       0x13 obj\debug\src\barometer.o
+ .debug_aranges
+                0x00000000       0x18 obj\debug\src\barometer.o
+ .debug_macro   0x00000000       0x1b obj\debug\src\barometer.o
+ .debug_macro   0x00000000      0x7f0 obj\debug\src\barometer.o
+ .debug_line    0x00000000       0x45 obj\debug\src\barometer.o
+ .debug_str     0x00000000     0x21a5 obj\debug\src\barometer.o
+ .comment       0x00000000       0x39 obj\debug\src\barometer.o
+ .ARM.attributes
+                0x00000000       0x31 obj\debug\src\barometer.o
  .group         0x00000000        0x8 obj\debug\src\main.o
  .group         0x00000000        0x8 obj\debug\src\main.o
  .group         0x00000000        0x8 obj\debug\src\main.o
@@ -4064,6 +4079,7 @@ LOAD obj\debug\spl\src\stm32f0xx_wwdg.o
 LOAD obj\debug\src\debug.o
 LOAD obj\debug\src\delay.o
 LOAD obj\debug\src\sim808.o
+LOAD obj\debug\src\barometer.o
 LOAD obj\debug\src\main.o
 LOAD obj\debug\src\servo.o
 LOAD obj\debug\src\startup_stm32f0xx.o

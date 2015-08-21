@@ -177,6 +177,7 @@
 		<Unit filename="inc\SIMcommands.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
+		<Unit filename="inc\barometer.h" />
 		<Unit filename="inc\config.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -199,6 +200,9 @@
 		<Unit filename="src\SIMcommands.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src\barometer.c">
+			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src\main.c">
 			<Option compilerVar="CC" />
