@@ -1,4 +1,4 @@
-obj\debug\src\main.o: src\main.c inc/stm32f0xx_conf.h \
+obj\debug\src\bmp180.o: src\bmp180.c inc/stm32f0xx_conf.h \
  SPL\inc/stm32f0xx_adc.h inc/stm32f0xx.h cmsis/core_cm0.h \
  cmsis/core_cmInstr.h cmsis/core_cmFunc.h inc/system_stm32f0xx.h \
  inc/stm32f0xx_conf.h SPL\inc/stm32f0xx_can.h SPL\inc/stm32f0xx_cec.h \
@@ -10,5 +10,4 @@ obj\debug\src\main.o: src\main.c inc/stm32f0xx_conf.h \
  SPL\inc/stm32f0xx_iwdg.h SPL\inc/stm32f0xx_pwr.h SPL\inc/stm32f0xx_rcc.h \
  SPL\inc/stm32f0xx_rtc.h SPL\inc/stm32f0xx_spi.h SPL\inc/stm32f0xx_tim.h \
  SPL\inc/stm32f0xx_usart.h SPL\inc/stm32f0xx_wwdg.h \
- SPL\inc/stm32f0xx_misc.h inc/umqtt.h inc/config.h inc/umqtt.h \
- inc/Debug.h inc/SIM808.h inc/Delay.h inc/servo.h inc/bmp180.h
+ SPL\inc/stm32f0xx_misc.h inc/BMP180.h

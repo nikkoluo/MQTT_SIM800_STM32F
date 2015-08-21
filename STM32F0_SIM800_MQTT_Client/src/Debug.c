@@ -10,6 +10,7 @@
 #include "Debug.h"
 #include "stm32f0xx_conf.h"
 
+
 char receivedDebug[200];
 unsigned char receivedDebugLen;
 
@@ -44,6 +45,7 @@ void debugInit(void)
 
 void debugSend(char StringToSend[])
 {
+    #if DEBUG
     uint16_t Length = strlen(StringToSend);
     uint16_t i;
     for (i=0; i<Length; i++ )
@@ -51,15 +53,18 @@ void debugSend(char StringToSend[])
         USART_SendData(USART1, StringToSend[i]);
         while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
     }
+    #endif
 }
 void debugSend2(char StringToSend[], int len)
 {
+    #if DEBUG
     uint16_t i;
     for (i=0; i<len; i++ )
     {
         USART_SendData(USART1, StringToSend[i]);
         while (!USART_GetFlagStatus(USART1, USART_FLAG_TC));
     }
+    #endif
 }
 void debugFlushRx(void)
 {
@@ -78,4 +83,65 @@ void USART1_IRQHandler (void)
         receivedDebug[receivedDebugLen++] = USART_ReceiveData(USART1);
     }
 
+}
+
+/** \brief debug printf to serial of a 16 bit unsigned int
+ *
+ * \param text to send before the value
+ * \param the 16 bit unsigned value
+ *
+ */
+void _printfU(char* text ,uint16_t x)
+{
+    #if DEBUG
+    char debugString[100]="";
+    sprintf(debugString, "%s %u\n",text, x);
+    debugSend(debugString);
+    #endif
+}
+
+/** \brief debug printf to serial of a 16 bit signed int
+ *
+ * \param text to send before the value
+ * \param the 16 bit signed value
+ *
+ */
+void _printfS(char* text ,int16_t x)
+{
+    #if DEBUG
+    char debugString[100]="";
+    sprintf(debugString, "%s %d\n",text, x);
+    debugSend(debugString);
+    #endif
+}
+
+
+/** \brief debug printf to serial of a 32 bit unsigned int
+ *
+ * \param text to send before the value
+ * \param the 16 bit unsigned value
+ *
+ */
+void _printfLngU(char* text ,uint32_t x)
+{
+    #if DEBUG
+    char debugString[100]="";
+    sprintf(debugString, "%s %u\n",text, x);
+    debugSend(debugString);
+    #endif
+}
+
+/** \brief debug printf to serial of a 32 bit signed int
+ *
+ * \param text to send before the value
+ * \param the 16 bit signed value
+ *
+ */
+void _printfLngS(char* text ,int32_t x)
+{
+    #if DEBUG
+    char debugString[100]="";
+    sprintf(debugString, "%s %d\n",text, x);
+    debugSend(debugString);
+    #endif
 }

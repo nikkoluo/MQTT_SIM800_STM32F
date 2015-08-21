@@ -20,7 +20,7 @@
 #include "SIM808.h"
 #include "Delay.h"
 #include "servo.h"
-
+#include "bmp180.h"
 #define LINEMAX 50
 
 #define umqtt_build_header(type, dup, qos, retain) \
@@ -51,6 +51,10 @@ extern char rxBuf[300];
 extern uint16_t rxBufLen;
 extern char receivedDebug[200];
 
+
+/** \name Barometer */
+struct bmp180_t Sensor1;
+
 //set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_OFF;
 int main(void)
@@ -58,17 +62,28 @@ int main(void)
     uint8_t flagNetReg=0, flagAlive=0, strtosend[20];
     uint16_t index=0;
     double lng, lat;
+    uint8_t data1, data2;
+    int32_t pressure1;
 ////initialize
     initDelay();
     gpioInit();
     debugInit();
     simInit();
 
-    debugSend("\nbegin\n");
+
+    debugSend("\n----begin----\n");
     delayMilliIT(500);
 
-    checkInitalStatus();
+/** \name Check Barometer */
+    bmp180_get_calib_param(&Sensor1);
+    getPressure(&pressure1, &Sensor1);
+    _printfLngS("Pressure is ", (int32_t)pressure1);
+    delayMilli(2000);
+    NVIC_SystemReset();
 
+
+/** \name Check SIM808 */
+    checkInitalStatus();
 
     ///check what state the TCP is in.
     whatStateAmIIn();
@@ -156,12 +171,30 @@ void gpioInit()
 
 
     ///PORT B
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_1);//I2C1_SCL
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);//I2C1_SDA
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
-    //GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;  //???
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
+
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_1);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);
     GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    //Make sure GPIOInit is called before this funciton is called
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
+    I2C_InitTypeDef I2C_InitStruct;
+    I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;
+    I2C_InitStruct.I2C_Timing = 0x0010020B;
+    I2C_InitStruct.I2C_OwnAddress1 = 0x00;
+    I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;
+    I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+    I2C_InitStruct.I2C_AnalogFilter = I2C_AnalogFilter_Enable;
+    I2C_InitStruct.I2C_DigitalFilter=0;
+    I2C_Init(I2C1, &I2C_InitStruct);
+
+    I2C_Cmd(I2C1, ENABLE);
 
 }
 
