@@ -1,8 +1,9 @@
-#include "Delay.h"
+#include "timing.h"
 #include "stm32f0xx_conf.h"
 #include <stdint.h>
 static volatile uint32_t TimingDelay;
 uint8_t msgTimout=0;
+uint32_t globalTimer =0 ;
 
 
 void initDelay()
@@ -38,4 +39,18 @@ void TimingDelay_Decrement(void) {
 void SysTick_Handler(void) {
 	TimingDelay_Decrement();
 	if(msgTimout<20) msgTimout++;
+	if(globalTimer<100000)
+	{
+	    globalTimer++;
+	}
+	else
+    {
+        debugSend("Watchdog Timeout");
+        NVIC_SystemReset();
+    }
+}
+
+void resetWatchdog()
+{
+    globalTimer=0;
 }

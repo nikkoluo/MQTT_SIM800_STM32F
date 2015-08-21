@@ -9,7 +9,7 @@
 #include "SIM808.h"
 #include "stm32f0xx_conf.h"
 #include <string.h>
-#include "Delay.h"
+#include "timing.h"
 #include "umqtt.h"
 #include "config.h"
 
@@ -193,9 +193,9 @@ uint8_t simCheckResult(char *sendCommand, char *checkResponse, uint16_t timeout)
     }
 }
 
-uint8_t simNetReg()
-{
-    if(simCheckResult("AT+CREG?", "0,1", 500000)==1) return 1;
+uint8_t simNetReg(){
+
+    if((simCheckResult("AT+CREG?", "0,1", 500000)==1)||(simCheckResult("AT+CREG?", "0,5", 500000)==1)) return 1;
     else return 0;
 }
 uint8_t simGPRSAttached()
@@ -276,23 +276,210 @@ void simTCPReceive(void)
 }
 
 
-tcp_state simUpdateState(void)
+void simUpdateState(tcp_state* current_state)
 {
     if(simCheckResult("AT+CIPSTATUS", "OK", 20000000)==1)
     {
-        if(strstr(rxBuf, "INITIAL") != NULL) return STATE_INITIAL;
-        else if((strstr(rxBuf, "START") != NULL)) return STATE_START;
-        else if((strstr(rxBuf, "CONFIG") != NULL)) return STATE_CONFIG;
-        else if((strstr(rxBuf, "GPRSACT") != NULL)) return STATE_GPRSACT;
-        else if((strstr(rxBuf, "IP STATUS") != NULL)) return STATE_STATUS;
-        else if((strstr(rxBuf, "TCP CONNECTING") != NULL)) return STATE_CONNECTING;
-        else if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL)) return STATE_CONNECTED;
-        else if((strstr(rxBuf, "CLOSING") != NULL)) return STATE_CLOSING;
-        else if((strstr(rxBuf, "CLOSED") != NULL)) return STATE_CLOSED;
-        else if((strstr(rxBuf, "PDP") != NULL)) return STATE_PDPDEACT;
+        if(strstr(rxBuf, "INITIAL") != NULL) *current_state = STATE_INITIAL;
+        else if((strstr(rxBuf, "START") != NULL)) *current_state = STATE_START;
+        else if((strstr(rxBuf, "CONFIG") != NULL)) *current_state = STATE_CONFIG;
+        else if((strstr(rxBuf, "GPRSACT") != NULL)) *current_state = STATE_GPRSACT;
+        else if((strstr(rxBuf, "IP STATUS") != NULL)) *current_state = STATE_STATUS;
+        else if((strstr(rxBuf, "TCP CONNECTING") != NULL)) *current_state = STATE_CONNECTING;
+        else if((strstr(rxBuf, "CONNECT OK") != NULL)||(strstr(rxBuf, "ALREADY CONNECT") != NULL)) *current_state = STATE_CONNECTED;
+        else if((strstr(rxBuf, "CLOSING") != NULL)) *current_state = STATE_CLOSING;
+        else if((strstr(rxBuf, "CLOSED") != NULL)) *current_state = STATE_CLOSED;
+        else if((strstr(rxBuf, "PDP") != NULL)) *current_state = STATE_PDPDEACT;
     }
-    debugSend(rxBuf);
+    //debugSend(rxBuf);
 }
 
 
 
+void checkInitalStatus(tcp_state* current_state)
+{
+    #if SIMVERBOSE
+    debugSend("checking the sim808's state");
+    #endif
+///CHECK STATUS OF SIM
+    if(simPing())
+    {///IF SUCCCESS THEN TEST NETWORK REGISTRATION
+        debugSend("ping-resp");
+        current_state = STATE_ON;
+    }
+    else
+    {///IF NO PING RESPONSE THEN ??
+        debugSend("ping-NO-resp\n");
+        NVIC_SystemReset();
+    }
+    if(simNoEcho()==0)
+    {
+        ///if the sim is not registered then Reboot microcontroller
+        debugSend("Echo not disabled\n");
+        debugSend(rxBuf);
+        NVIC_SystemReset();
+    }
+
+    ///IF STATUS IS FINE THEN INITIALISE THE SIM
+    if(simNetReg()==0)
+    {
+        ///if the sim is not registered then Reboot microcontroller
+        debugSend("Not registered so rebooting\n");
+        debugSend(rxBuf);
+        NVIC_SystemReset();
+    }
+    ///the device is registered so check if GPRS is attached.
+    debugSend("device is registered\n");
+    if(simGPRSAttached()==0)
+    {
+        ///if GPRS is NOT attached then reboot microcontroller
+        debugSend("GPRS not attached - rebooting\n");
+        simSend("AT+CGATT=1");///Try attach the GPRS service
+        delayMilliIT(100);
+        debugSend(rxBuf);
+        delayMilliIT(100);
+        NVIC_SystemReset();
+    }
+    debugSend("GPRS is attached\n");
+
+    if(simResetIPSession()==0)
+    {
+        ///Not able to reset the IP Session
+        NVIC_SystemReset();
+    }
+    debugSend("--IP session reset--");
+
+
+    ///Disable the auto send packet
+    flushReceiveBuffer();
+    simSend("AT+CIPRXGET=1");
+    while(simAvailable()==0);
+    if(strstr(rxBuf, "OK") != NULL)
+    {
+        debugSend("successful manual TCP get\n");
+
+    }
+    else
+    {
+        debugSend(rxBuf);
+        NVIC_SystemReset();
+
+    }
+}
+
+
+
+void whatStateAmIIn(tcp_state* current_state)
+{
+    #ifdef SIMVERBOSE
+    debugSend("\nDebug state \n");
+    switch(*current_state)
+    {
+        case STATE_ON:
+            debugSend("--on--\n");
+            break;
+        case STATE_INITIAL:
+            debugSend("--initial--\n");
+            break;
+        case STATE_START:
+            debugSend("--start--\n");
+            break;
+        case STATE_CONFIG:
+            debugSend("--config--\n");
+            break;
+        case STATE_GPRSACT:
+            debugSend("\n--GPRS act--\n");
+            break;
+        case STATE_STATUS:
+            debugSend("\n--statusing--\n");
+            break;
+        case STATE_CONNECTING:
+            debugSend("\n--connecting--\n");
+            break;
+        case STATE_CONNECTED:
+            debugSend("\n--connected--\n");
+            break;
+        case STATE_CLOSING:
+            debugSend("closing connection--\n");
+            break;
+        case STATE_CLOSED:
+            debugSend("\n--connecting--\n");
+            break;
+        case STATE_PDPDEACT:
+            debugSend("PDP Deact\n");
+            break;
+    }
+    #endif
+}
+
+
+
+void simConnect(tcp_state* current_state)
+{
+    tcp_state tempState = *current_state;
+    debugSend("position 1");
+    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
+    if(simMUX()==0)
+    {
+        NVIC_SystemReset();
+    }
+    debugSend(rxBuf);
+    delayMilliIT(10);
+
+    if(simAPN()==0)
+    {
+        NVIC_SystemReset();
+    }
+    debugSend(rxBuf);
+    while(tempState!=STATE_START)
+    {
+        debugSend(rxBuf);
+        delayMilliIT(50);
+        simUpdateState(&tempState);
+        whatStateAmIIn(&tempState);
+    }
+    debugSend("about to start wireless\n");
+
+    flushReceiveBuffer();
+    simSend("AT+CIICR");
+    while(simAvailable()==0);
+
+    if(strstr(rxBuf, "OK") != NULL)
+    {
+        debugSend("successful CIICR");
+    }
+    else NVIC_SystemReset();
+
+    while(tempState != STATE_GPRSACT)
+    {
+        simUpdateState(&tempState);
+        whatStateAmIIn(&tempState);
+    }
+
+    if(simCheckResult("AT+CIFSR", "ERROR", 5000000)==1) NVIC_SystemReset();
+    debugSend("here is my IP: \n");
+    debugSend(rxBuf);
+
+
+///Connect to the MQTT server
+    flushReceiveBuffer();
+    simSend(connString);
+    while(simAvailable()==0);//read the response
+    if(strstr(rxBuf, "OK") != NULL)
+    {
+        debugSend(rxBuf);
+        flushReceiveBuffer();
+        while(simAvailable()==0);
+    }
+    if(strstr(rxBuf, "CONNECT FAIL") != NULL)
+    {
+        debugSend("unsuccessful connection\n");
+        NVIC_SystemReset();
+    }
+
+
+
+    debugSend("Connect successful!!\n");
+    debugSend(rxBuf);
+    //*current_state = (tcp_state)tempState;
+}

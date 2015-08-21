@@ -17,7 +17,7 @@ void I2CInit()
     GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);
     GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    //Make sure GPIOInit is called before this funciton is called
+    //Make sure GPIOInit is called before this function is called
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
     I2C_InitTypeDef I2C_InitStruct;
     I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;
@@ -32,6 +32,31 @@ void I2CInit()
     I2C_Cmd(I2C1, ENABLE);
 }
 
+int32_t pressureAverage(struct bmp180_t* sensorX)
+{
+    int32_t pressure=0, avgPressure=0;
+    uint8_t i;
+    struct bmp180_t tempSensor = *sensorX;
+  // Equation taken from BMP180 datasheet (page 16):
+  //  http://www.adafruit.com/datasheets/BST-BMP180-DS000-09.pdf
+
+  // Note that using the equation from wikipedia can give bad results
+  // at high altitude.  See this thread for more information:
+  //  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
+    for(i=0; i<6; i++)
+    {
+        getPressure(&pressure, &tempSensor);
+        #if BMPVERBOSE
+        _printfLngS("--Pressure ", pressure);
+        #endif
+        avgPressure+=pressure;
+    }
+    avgPressure=avgPressure/6;
+    #if BMPVERBOSE2
+    _printfLngS("avgPressure ", avgPressure);
+    #endif
+    return avgPressure;
+}
 
 /***************************************************************************
  PRIVATE FUNCTIONS

@@ -14,17 +14,18 @@
 				<Option compiler="armgcc_eb" />
 				<Option projectDeviceOptionsRelation="0" />
 				<Compiler>
-					<Add option="-g3" />
-					<Add option="-O0" />
 					<Add option="-Wall" />
 					<Add option="-fdata-sections" />
 					<Add option="-ffunction-sections" />
+					<Add option="-O0" />
+					<Add option="-g3" />
 				</Compiler>
 				<Assembler>
 					<Add option="-Wa,--gdwarf-2" />
 				</Assembler>
 				<Linker>
 					<Add option="-Wl,--gc-sections" />
+					<Add library="m" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -171,7 +172,6 @@
 		<Unit filename="inc\Debug.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="inc\Delay.h" />
 		<Unit filename="inc\SIM808.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
@@ -186,12 +186,10 @@
 		<Unit filename="inc\stm32f0xx.h" />
 		<Unit filename="inc\stm32f0xx_conf.h" />
 		<Unit filename="inc\system_stm32f0xx.h" />
+		<Unit filename="inc\timing.h" />
 		<Unit filename="inc\umqtt.h" />
 		<Unit filename="readme.txt" />
 		<Unit filename="src\Debug.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="src\Delay.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src\SIM808.c">
@@ -216,6 +214,9 @@
 		<Unit filename="src\system_stm32f0xx.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="src\timing.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="src\umqtt.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -224,7 +225,7 @@
 		<Extensions>
 			<code_completion />
 			<debugger>
-				<target_debugging_settings target="Debug" active_interface="ST-link">
+				<target_debugging_settings target="Release" active_interface="ST-link">
 					<debug_interface interface_id="ST-link" ip_address="localhost" ip_port="4242" path="${EMBLOCKS}\share\contrib" executable="STLinkGDB.exe" description="" dont_start_server="false" backoff_time="1000" options="0" reg_filter="0" active_family="STMicroelectronics">
 						<family_options family_id="STMicroelectronics">
 							<option opt_id="ID_JTAG_SWD" opt_value="swd" />
@@ -241,7 +242,7 @@
 						</family_options>
 					</debug_interface>
 				</target_debugging_settings>
-				<target_debugging_settings target="Release" active_interface="ST-link">
+				<target_debugging_settings target="Debug" active_interface="ST-link">
 					<debug_interface interface_id="ST-link" ip_address="localhost" ip_port="4242" path="${EMBLOCKS}\share\contrib" executable="STLinkGDB.exe" description="" dont_start_server="false" backoff_time="1000" options="0" reg_filter="0" active_family="STMicroelectronics">
 						<family_options family_id="STMicroelectronics">
 							<option opt_id="ID_JTAG_SWD" opt_value="swd" />

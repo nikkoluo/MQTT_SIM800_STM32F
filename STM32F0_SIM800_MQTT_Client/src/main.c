@@ -18,13 +18,18 @@
 #include "config.h"
 #include "Debug.h"
 #include "SIM808.h"
-#include "Delay.h"
+#include "timing.h"
 #include "servo.h"
 #include "bmp180.h"
 #define LINEMAX 50
 
+
+
 #define umqtt_build_header(type, dup, qos, retain) \
 	(((type) << 4) | ((dup) << 3) | ((qos) << 1) | (retain))
+
+#define MAINVERBOSE 1
+
 
 
 char *connackAccept = {0x20, 0x02, 0,0};
@@ -51,20 +56,28 @@ extern char rxBuf[300];
 extern uint16_t rxBufLen;
 extern char receivedDebug[200];
 
-
 /** \name Barometer */
 struct bmp180_t Sensor1;
 
 //set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_OFF;
+
+
 int main(void)
 {
     uint8_t flagNetReg=0, flagAlive=0, strtosend[20];
     uint16_t index=0;
     double lng, lat;
     uint8_t data1, data2;
-    int32_t pressure1;
-////initialize
+    int32_t pressure1=0, pressure2 =0;
+
+/** Initialise functions
+***************************
+*   initTiming
+*   initGPIO
+*   initDebug
+*   initSim
+**/
     initDelay();
     gpioInit();
     debugInit();
@@ -74,24 +87,25 @@ int main(void)
     debugSend("\n----begin----\n");
     delayMilliIT(500);
 
+
+
 /** \name Check Barometer */
     bmp180_get_calib_param(&Sensor1);
-    getPressure(&pressure1, &Sensor1);
-    _printfLngS("Pressure is ", (int32_t)pressure1);
-    delayMilli(2000);
-    NVIC_SystemReset();
 
 
 /** \name Check SIM808 */
-    checkInitalStatus();
+    checkInitalStatus(&current_state);
 
     ///check what state the TCP is in.
-    whatStateAmIIn();
+    whatStateAmIIn(&current_state);
     if(current_state!= STATE_CONNECTED)
         simConnect();
+    debugSend("pos 1");
     ///Authenticate with the MQTT broker
     nethandler_umqtt_init(&mqtt);
+    debugSend("pos 4");
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+    debugSend("pos 3");
     recievePacket();
     if(strstr(rxBuf, connackAccept) != NULL)
         debugSend("MQTT Connection accepted");
@@ -113,6 +127,8 @@ int main(void)
 
     while(1)
     {
+        resetWatchdog();
+
         delayMilliIT(100);//why? i dont know..
 
         counter++;
@@ -124,7 +140,9 @@ int main(void)
             debugSend("ping-NO-response\n");
             NVIC_SystemReset();
         }
-        current_state=simUpdateState();
+
+        simUpdateState(&current_state);
+
         if(current_state!=STATE_CONNECTED)
         {
             debugSend("connection no longer alive\n");
@@ -132,9 +150,19 @@ int main(void)
         }
         ///Receive any subscribed packets
         recievePacket();
-        ///Get GPS Coords
+        if(counter%30==0)
+        {
+            ///Get GPS Coords
 
 
+            ///Get Altitude
+            pressure1 = pressureAverage(&Sensor1);
+            _printfLngS("Pressure is ", (int32_t)pressure1);
+
+            ///Get Balloon Pressure
+            //getPressure(&pressure2, &Sensor2);
+            //_printfLngS("Balloon Pressure is ", (int32_t)pressure2);
+        }
         ///MQTT Tranmit packet
         if(counter%199==0)
         {
@@ -142,7 +170,7 @@ int main(void)
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             //sprintf(strtosend, "%d", counter);
-            parseData(strtosend, "latcoord", "lngcoor", "placehold", "placehold");
+            parseData(strtosend, "latcoord", "lngcoor", pressure1, "placehold");
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
         }
@@ -154,8 +182,8 @@ void gpioInit()
     ///PORT A
     //USART 1 and 2
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS2
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS2
+    //GPIO_PinAFConfig(GPIOA, GPIO_PinSource0, GPIO_AF_1);//CTS2
+   // GPIO_PinAFConfig(GPIOA, GPIO_PinSource1, GPIO_AF_1);//RTS2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_1);//TX2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_1);//RX2
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1); // TIM3_CH1
@@ -199,180 +227,6 @@ void gpioInit()
 }
 
 
-void simConnect()
-{
-    char connString[]="AT+CIPSTART=\"TCP\",\"m11.cloudmqtt.com\",\"14672\"";
-    //char connString[]="AT+CIPSTART=\"TCP\",\"test.mosquitto.org\",\"1883\"";
-    if(simMUX()==0)
-    {
-        NVIC_SystemReset();
-    }
-    debugSend(rxBuf);
-    delayMilliIT(10);
-
-    if(simAPN()==0)
-    {
-        NVIC_SystemReset();
-    }
-    debugSend(rxBuf);
-    while(current_state!=STATE_START)
-    {
-        delayMilliIT(50);
-        current_state=simUpdateState();
-        whatStateAmIIn();
-    }
-    debugSend("about to start wireless\n");
-
-    flushReceiveBuffer();
-    simSend("AT+CIICR");
-    while(simAvailable()==0);
-
-    if(strstr(rxBuf, "OK") != NULL)
-    {
-        debugSend("successful CIICR");
-    }
-    else NVIC_SystemReset();
-
-    while(current_state != STATE_GPRSACT)
-    {
-        current_state = simUpdateState();
-        whatStateAmIIn();
-    }
-
-    if(simCheckResult("AT+CIFSR", "ERROR", 5000000)==1) NVIC_SystemReset();
-    debugSend("here is my IP: \n");
-    debugSend(rxBuf);
-
-
-///Connect to the MQTT server
-    flushReceiveBuffer();
-    simSend(connString);
-    while(simAvailable()==0);//read the response
-    if(strstr(rxBuf, "OK") != NULL)
-    {
-        debugSend(rxBuf);
-        flushReceiveBuffer();
-        while(simAvailable()==0);
-    }
-    if(strstr(rxBuf, "CONNECT FAIL") != NULL)
-    {
-        debugSend("unsuccessful connection\n");
-        NVIC_SystemReset();
-    }
-    debugSend("Connect successful!!\n");
-    debugSend(rxBuf);
-
-}
-
-void whatStateAmIIn()
-{
-    current_state=simUpdateState();
-    switch(current_state)
-    {
-        case STATE_ON:
-            debugSend("--on--\n");
-            break;
-        case STATE_INITIAL:
-            debugSend("--initial--\n");
-            break;
-        case STATE_START:
-            debugSend("--start--\n");
-            break;
-        case STATE_CONFIG:
-            debugSend("--config--\n");
-            break;
-        case STATE_GPRSACT:
-            debugSend("\n--GPRS act--\n");
-            break;
-        case STATE_STATUS:
-            debugSend("\n--statusing--\n");
-            break;
-        case STATE_CONNECTING:
-            debugSend("\n--connecting--\n");
-            break;
-        case STATE_CONNECTED:
-            debugSend("\n--connected--\n");
-            break;
-        case STATE_CLOSING:
-            debugSend("closing connection--\n");
-            break;
-        case STATE_CLOSED:
-            debugSend("\n--connecting--\n");
-            break;
-        case STATE_PDPDEACT:
-            debugSend("PDP Deact\n");
-            break;
-    }
-}
-
-void checkInitalStatus(void)
-{
-
-///CHECK STATUS OF SIM
-    if(simPing())
-    {///IF SUCCCESS THEN TEST NETWORK REGISTRATION
-        debugSend("ping-resp");
-        current_state = STATE_ON;
-    }
-    else
-    {///IF NO PING RESPONSE THEN ??
-        debugSend("ping-NO-resp\n");
-        NVIC_SystemReset();
-    }
-    if(simNoEcho()==0)
-    {
-        ///if the sim is not registered then Reboot microcontroller
-        debugSend("Echo not disabled\n");
-        debugSend(rxBuf);
-        NVIC_SystemReset();
-    }
-
-    ///IF STATUS IS FINE THEN INITIALISE THE SIM
-    if(simNetReg()==0)
-    {
-        ///if the sim is not registered then Reboot microcontroller
-        debugSend("Not registered so rebooting\n");
-        debugSend(rxBuf);
-        NVIC_SystemReset();
-    }
-    ///the device is registered so check if GPRS is attached.
-    debugSend("device is registered\n");
-    if(simGPRSAttached()==0)
-    {
-        ///if GPRS is NOT attached then reboot microcontroller
-        debugSend("GPRS not attached - rebooting\n");
-        simSend("AT+CGATT=1");///Try attach the GPRS service
-        delayMilliIT(100);
-        debugSend(rxBuf);
-        delayMilliIT(100);
-        NVIC_SystemReset();
-    }
-    debugSend("GPRS is attached\n");
-
-    if(simResetIPSession()==0)
-    {
-        ///Not able to reset the IP Session
-        NVIC_SystemReset();
-    }
-    debugSend("--IP session reset--");
-
-
-    ///Disable the auto send packet
-    flushReceiveBuffer();
-    simSend("AT+CIPRXGET=1");
-    while(simAvailable()==0);
-    if(strstr(rxBuf, "OK") != NULL)
-    {
-        debugSend("successful manual TCP get\n");
-
-    }
-    else
-    {
-        debugSend(rxBuf);
-        NVIC_SystemReset();
-
-    }
-}
 
 void recievePacket(void)
 {
@@ -436,8 +290,8 @@ void recievePacket(void)
 }
 
 
-void parseData(char *payload, char *latitude , char *longitude, char *altitude, char *battery)
+void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, char *battery)
 {
 
-    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, 1000+rand()%1000, 80+rand()%30);
+    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, altitude, 80+rand()%30);
 }

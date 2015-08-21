@@ -10,5 +10,5 @@ obj\debug\src\sim808.o: src\SIM808.c inc/SIM808.h inc/stm32f0xx_conf.h \
  SPL\inc/stm32f0xx_iwdg.h SPL\inc/stm32f0xx_pwr.h SPL\inc/stm32f0xx_rcc.h \
  SPL\inc/stm32f0xx_rtc.h SPL\inc/stm32f0xx_spi.h SPL\inc/stm32f0xx_tim.h \
  SPL\inc/stm32f0xx_usart.h SPL\inc/stm32f0xx_wwdg.h \
- SPL\inc/stm32f0xx_misc.h inc/Delay.h inc/umqtt.h inc/config.h \
+ SPL\inc/stm32f0xx_misc.h inc/timing.h inc/umqtt.h inc/config.h \
  inc/umqtt.h
