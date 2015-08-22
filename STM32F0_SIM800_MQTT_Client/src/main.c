@@ -150,7 +150,7 @@ int main(void)
         }
         ///Receive any subscribed packets
         recievePacket();
-        if(counter%30==0)
+        if(counter%25==0)
         {
             ///Get GPS Coords
 
@@ -164,7 +164,7 @@ int main(void)
             //_printfLngS("Balloon Pressure is ", (int32_t)pressure2);
         }
         ///MQTT Tranmit packet
-        if(counter%199==0)
+        if(counter%25==0)
         {
             debugSend("\n-transmit-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;

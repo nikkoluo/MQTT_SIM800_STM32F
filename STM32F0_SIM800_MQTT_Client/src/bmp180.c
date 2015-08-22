@@ -43,15 +43,16 @@ int32_t pressureAverage(struct bmp180_t* sensorX)
   // Note that using the equation from wikipedia can give bad results
   // at high altitude.  See this thread for more information:
   //  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
-    for(i=0; i<6; i++)
+    for(i=0; i<20; i++)
     {
+
         getPressure(&pressure, &tempSensor);
         #if BMPVERBOSE
         _printfLngS("--Pressure ", pressure);
         #endif
         avgPressure+=pressure;
     }
-    avgPressure=avgPressure/6;
+    avgPressure=avgPressure/20;
     #if BMPVERBOSE2
     _printfLngS("avgPressure ", avgPressure);
     #endif
