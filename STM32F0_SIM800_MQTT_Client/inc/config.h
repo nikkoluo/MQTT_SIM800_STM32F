@@ -1,6 +1,10 @@
 #ifndef CONFIG_H_INCLUDED
 #define CONFIG_H_INCLUDED
 #include "umqtt.h"
+#include "stm32f0xx_gpio.h"
+
+
+#define SIM_PWR GPIO_Pin_5
 
 #define MQTT_URL 				"m11.cloudmqtt.com"
 

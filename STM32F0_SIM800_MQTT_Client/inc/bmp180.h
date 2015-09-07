@@ -15,7 +15,7 @@
 
 #define BARO1_WRITE 0xEE
 #define BARO1_READ 0xEF
-
+#define BMP180_ATTACHED 0
 
 /***************************************************************/
 /**\name	ERROR CODE DEFINITIONS    */

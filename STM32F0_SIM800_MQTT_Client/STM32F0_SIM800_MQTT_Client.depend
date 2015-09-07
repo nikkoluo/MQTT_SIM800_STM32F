@@ -693,7 +693,7 @@
 
 1437224419 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\startup_stm32f0xx.s
 
-1440176948 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\main.c
+1440666261 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\main.c
 	"stm32f0xx_conf.h"
 	<stdio.h>
 	<string.h>
@@ -705,8 +705,9 @@
 	"servo.h"
 	"bmp180.h"
 
-1437251146 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\config.h
+1441645227 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\config.h
 	"umqtt.h"
+	"stm32f0xx_gpio.h"
 
 1437857480 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\servo.h
 
@@ -715,12 +716,12 @@
 	"stm32f0xx_conf.h"
 	<stdio.h>
 
-1440254370 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\bmp180.c
+1440666225 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\bmp180.c
 	"stm32f0xx_conf.h"
 	<stdio.h>
 	"BMP180.h"
 
-1440157968 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\bmp180.h
+1440666061 c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\inc\bmp180.h
 
 1440167770 source:c:\users\brandon\documents\simcom_mqtt\stm32f0_sim800_mqtt_client\src\timing.c
 	"timing.h"

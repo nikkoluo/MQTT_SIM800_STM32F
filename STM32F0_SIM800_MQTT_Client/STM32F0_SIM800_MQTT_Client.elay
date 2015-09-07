@@ -106,9 +106,9 @@
 			<Cursor1 position="8805" topLine="295" />
 		</Cursor>
 	</File>
-	<File name="inc\BMP180.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="inc\BMP180.h" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="507" topLine="12" />
+			<Cursor1 position="562" topLine="12" />
 		</Cursor>
 	</File>
 	<File name="inc\Debug.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -128,12 +128,17 @@
 	</File>
 	<File name="inc\stm32f0xx.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="56040" topLine="833" />
+			<Cursor1 position="56040" topLine="580" />
 		</Cursor>
 	</File>
-	<File name="inc\system_stm32f0xx.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="inc\stm32f0xx_conf.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1589" topLine="46" />
+			<Cursor1 position="0" topLine="1" />
+		</Cursor>
+	</File>
+	<File name="inc\system_stm32f0xx.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1589" topLine="69" />
 		</Cursor>
 	</File>
 	<File name="inc\timing.h" open="0" top="0" tabpos="12" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -146,52 +151,54 @@
 			<Cursor1 position="1184" topLine="10" />
 		</Cursor>
 	</File>
-	<File name="src\Debug.c" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\Debug.c" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="3290" topLine="109" />
+			<Cursor1 position="764" topLine="11" />
 		</Cursor>
 	</File>
-	<File name="src\SIM808.c" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\SIM808.c" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="11163" topLine="128" />
+			<Cursor1 position="7501" topLine="18" />
 		</Cursor>
 	</File>
-	<File name="src\bmp180.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\bmp180.c" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1703" topLine="24" />
-		</Cursor>
-		<Folding>
-			<Collapse line="242" />
-		</Folding>
-	</File>
-	<File name="src\main.c" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="3442" topLine="144" />
+			<Cursor1 position="138" topLine="0" />
 		</Cursor>
 	</File>
-	<File name="src\servo.c" open="0" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\main.c" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1098" topLine="0" />
+			<Cursor1 position="1852" topLine="83" />
 		</Cursor>
 	</File>
-	<File name="src\startup_stm32f0xx.S" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\servo.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="6141" topLine="107" />
+			<Cursor1 position="206" topLine="1" />
+		</Cursor>
+	</File>
+	<File name="src\startup_stm32f0xx.S" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="5665" topLine="15" />
 		</Cursor>
 	</File>
 	<File name="src\system_stm32f0xx.c" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5712" topLine="139" />
+			<Cursor1 position="2052" topLine="40" />
 		</Cursor>
 	</File>
 	<File name="src\timing.c" open="0" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="16" topLine="18" />
+			<Cursor1 position="16" topLine="0" />
 		</Cursor>
 	</File>
 	<File name="src\umqtt.c" open="0" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="7700" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="stm32f051c6_sram.ld" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3939" topLine="95" />
 		</Cursor>
 	</File>
 </EmBlocks_layout_file>

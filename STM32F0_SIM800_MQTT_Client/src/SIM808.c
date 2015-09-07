@@ -298,6 +298,7 @@ void simUpdateState(tcp_state* current_state)
 
 void checkInitalStatus(tcp_state* current_state)
 {
+    uint8_t countdown;
     #if SIMVERBOSE
     debugSend("checking the sim808's state");
     #endif
@@ -321,13 +322,17 @@ void checkInitalStatus(tcp_state* current_state)
     }
 
     ///IF STATUS IS FINE THEN INITIALISE THE SIM
-    if(simNetReg()==0)
+    for(countdown=0; countdown<5; countdown++)
     {
-        ///if the sim is not registered then Reboot microcontroller
-        debugSend("Not registered so rebooting\n");
-        debugSend(rxBuf);
-        NVIC_SystemReset();
+        delayMilliIT(2000);
+        if(simNetReg()==0)
+        {
+            ///if the sim is not registered then Reboot microcontroller
+            debugSend("Not registered so rebooting\n");
+            debugSend(rxBuf);
+        }
     }
+    NVIC_SystemReset();
     ///the device is registered so check if GPRS is attached.
     debugSend("device is registered\n");
     if(simGPRSAttached()==0)

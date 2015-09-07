@@ -85,14 +85,16 @@ int main(void)
 
 
     debugSend("\n----begin----\n");
-    delayMilliIT(500);
-
-
-
+    GPIO_ResetBits(GPIOA, GPIO_Pin_5);
+    delayMilliIT(2500);
+    GPIO_SetBits(GPIOA, GPIO_Pin_5);
+    debugSend("\n----SIM On----\n");
+    delayMilliIT(5000);
+    #if BMP180_ATTACHED
 /** \name Check Barometer */
     bmp180_get_calib_param(&Sensor1);
-
-
+    #endif
+    debugSend("\n----No BMP180----\n");
 /** \name Check SIM808 */
     checkInitalStatus(&current_state);
 
@@ -179,6 +181,22 @@ int main(void)
 
 void gpioInit()
 {
+    /**
+     * PA0 - Ultrasonic Trigger
+     * PA1 - Ultrasonic Echo
+     * PA2 - TX2 - to SIM RX
+     * PA3 - RX2 - to SIM TX
+     * PA4 -
+     * PA5 - SIM Power
+     * PA6 - Test pad
+     * PA7 - Test pad
+     * PA8 -
+     * PA9  - TX1 - debug
+     * PA10 - RX1 - debug
+     * PB0 - Test pad
+     * PB1 - Test pad
+     * PB2 - Test pad
+     */
     ///PORT A
     //USART 1 and 2
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
@@ -197,6 +215,12 @@ void gpioInit()
         GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+    GPIO_InitStruct.GPIO_Pin =GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
+    GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     ///PORT B
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);

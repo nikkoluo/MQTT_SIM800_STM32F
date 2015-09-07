@@ -34,6 +34,7 @@ void I2CInit()
 
 int32_t pressureAverage(struct bmp180_t* sensorX)
 {
+#if BMP180_ATTACHED
     int32_t pressure=0, avgPressure=0;
     uint8_t i;
     struct bmp180_t tempSensor = *sensorX;
@@ -57,6 +58,7 @@ int32_t pressureAverage(struct bmp180_t* sensorX)
     _printfLngS("avgPressure ", avgPressure);
     #endif
     return avgPressure;
+#endif
 }
 
 /***************************************************************************
@@ -219,6 +221,19 @@ _printfLngS("B5: ", b5);
   /* Assign compensated pressure value */
   *pressure = compp;
 }
+void checkAttached(void)
+{
+    uint8_t deviceID=0;
+    read8(0xD0, &deviceID);
+    if (deviceID==0)
+    {
+        #define BMP180_ATTACHED 0
+    }
+    else
+    {
+        #define BMP180_ATTACHED 1
+    }
+}
 
 void getTemperature(float *temp, struct bmp180_t* sensorX)
 {
@@ -241,9 +256,10 @@ void getTemperature(float *temp, struct bmp180_t* sensorX)
 
 void bmp180_get_calib_param(struct bmp180_t* sensorX)
 {
+
     uint16_t unsignedShortData, i;
     char debugString[100]="";
-
+#if BMP180_ATTACHED
     sensorX->mode =3;
     read16(0xAA, &unsignedShortData);
     for(i=0;i<480;i++);
@@ -295,4 +311,5 @@ void bmp180_get_calib_param(struct bmp180_t* sensorX)
     debugSend(debugString);
     #endif
 
+#endif
 }
