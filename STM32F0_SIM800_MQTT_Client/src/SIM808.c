@@ -94,6 +94,8 @@ void simTransmit(char * stringToSend, uint16_t length)
 
 
 }
+
+/*
 void simEnterDataMode()
 {
     uint8_t wait=1;
@@ -122,7 +124,9 @@ void simExitDataMode()
     delayMilliIT(1000);
     simSendRaw("+++");
     delayMilliIT(1000);
-}
+}*/
+
+
 void flushReceiveBuffer()
 {
     uint16_t i;
@@ -204,6 +208,188 @@ uint8_t simGPRSAttached()
     else return 0;
 }
 
+void simPinCheck()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CPIN?");
+    while(simAvailable()==0)
+    {
+        counter++;
+        if (counter > 500000)
+        {
+            simSendRaw('A');
+            return 0;
+        }
+    }
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+
+void simBatteryCheck(struct sim808_t * sim808)
+{
+    char ptrBat;
+    char Batt[2];
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CBC");
+    while(simAvailable()==0)
+    {
+        counter++;
+        if (counter > 500000)
+        {
+            simSendRaw('A');
+            return 0;
+        }
+    }
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+        /**
+        AT+CBC
+
+        +CBC: 0,75,4004
+
+        OK
+        */
+        memcpy(&Batt[0], &rxBuf[17], 2);//pointer to the battery percentage
+        //debugSend2(Batt, 2);
+        sim808->batteryPercentage = &Batt;
+    }
+    else debugSend("No response");
+}
+
+void simGPSStart()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CGPSPWR=1");
+    while(simAvailable()==0)
+    {
+        counter++;
+        if (counter > 500000)
+        {
+            simSendRaw('A');
+            return 0;
+        }
+    }
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+
+void simGPSRestartCold()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CGPSRST=0");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+
+void simGPSSResetWarm()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CGPSRST=2");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+void simGPSInfo()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CGPSINF=0");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+void simGPSStatus()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CGPSSTATUS?");
+    while(simAvailable()==0)
+    {
+        counter++;
+        if (counter > 500000)
+        {
+            simSendRaw('A');
+            return 0;
+        }
+    }
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+
+void simGSMLoc(struct sim808_t * sim808)
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CIPGSMLOC=1");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+
+void simEnableCharge()
+{
+
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+ECHARGE=1");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+
+    counter=0;
+    flushReceiveBuffer();
+    simSend("AT&W");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
+
+void simSignalQuality()
+{
+    uint32_t counter=0;
+    flushReceiveBuffer();
+    simSend("AT+CSQ");
+    delayMilliIT(30);
+    if(rxBufLen>0)
+    {
+        debugSend(rxBuf);
+    }
+    else debugSend("No response");
+}
 uint8_t simNoEcho()
 {
     if(simCheckResult("ATE0", "OK", 500000)==1) return 1;
@@ -299,6 +485,7 @@ void simUpdateState(tcp_state* current_state)
 void checkInitalStatus(tcp_state* current_state)
 {
     uint8_t countdown;
+    char pass=0;
     #if SIMVERBOSE
     debugSend("checking the sim808's state");
     #endif
@@ -322,38 +509,74 @@ void checkInitalStatus(tcp_state* current_state)
     }
 
     ///IF STATUS IS FINE THEN INITIALISE THE SIM
-    for(countdown=0; countdown<5; countdown++)
+    countdown=0;
+    pass = 0;
+    while((countdown<5)&&(pass==0))
     {
-        delayMilliIT(2000);
+        countdown++;
+        delayMilliIT(6000);
         if(simNetReg()==0)
         {
             ///if the sim is not registered then Reboot microcontroller
-            debugSend("Not registered so rebooting\n");
+            debugSend("Not registered yet...\n");
             debugSend(rxBuf);
         }
+        else pass = 1;
     }
-    NVIC_SystemReset();
-    ///the device is registered so check if GPRS is attached.
-    debugSend("device is registered\n");
-    if(simGPRSAttached()==0)
+    if(pass==0)
     {
-        ///if GPRS is NOT attached then reboot microcontroller
-        debugSend("GPRS not attached - rebooting\n");
-        simSend("AT+CGATT=1");///Try attach the GPRS service
-        delayMilliIT(100);
-        debugSend(rxBuf);
-        delayMilliIT(100);
+        debugSend("Rebooting\n");
+        NVIC_SystemReset();
+    }
+
+    ///the device is registered so check if GPRS is attached.
+    debugSend("device is registered. Checking GPRS\n");
+
+    countdown=0;
+    pass = 0;
+    while((countdown<5)&&(pass==0))
+    {
+        countdown++;
+        delayMilliIT(2000);
+        if(simGPRSAttached()==0)
+        {
+            ///if GPRS is NOT attached then reboot microcontroller
+            debugSend("GPRS not attached\n");
+            simSend("AT+CGATT=1");///Try attach the GPRS service
+            delayMilliIT(100);
+            debugSend(rxBuf);
+            delayMilliIT(100);
+        }
+        else pass = 1;
+    }
+    if(pass==0)
+    {
+        debugSend("Rebooting\n");
         NVIC_SystemReset();
     }
     debugSend("GPRS is attached\n");
 
-    if(simResetIPSession()==0)
+    countdown=0;
+    pass = 0;
+    while((countdown<5)&&(pass==0))
     {
-        ///Not able to reset the IP Session
+        countdown++;
+        delayMilliIT(2000);
+        if(simResetIPSession()==0)
+        {
+            ///Not able to reset the IP Session
+            debugSend("Not able to reset the IP session - rebooting\n");
+        }
+        else pass = 1;
+
+    }
+    if(pass==0)
+    {
+        debugSend("Rebooting\n");
         NVIC_SystemReset();
     }
-    debugSend("--IP session reset--");
 
+    debugSend("--IP session reset--");
 
     ///Disable the auto send packet
     flushReceiveBuffer();

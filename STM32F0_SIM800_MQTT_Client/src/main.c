@@ -61,7 +61,7 @@ struct bmp180_t Sensor1;
 
 //set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_OFF;
-
+struct sim808_t sim808;
 
 int main(void)
 {
@@ -85,11 +85,45 @@ int main(void)
 
 
     debugSend("\n----begin----\n");
+
+    simSend("AT+CPOWD=1");
+    delayMilliIT(500);
     GPIO_ResetBits(GPIOA, GPIO_Pin_5);
     delayMilliIT(2500);
     GPIO_SetBits(GPIOA, GPIO_Pin_5);
     debugSend("\n----SIM On----\n");
     delayMilliIT(5000);
+
+    simPinCheck();
+
+    simEnableCharge();
+
+    delayMilli(20);
+    simGPSStatus();
+
+    delayMilli(20);
+    simGPSStart();
+
+    delayMilliIT(3000);
+    simGPSRestartCold();
+    delayMilliIT(20000);
+    simGPSSResetWarm();
+    while(1)
+    {
+        simBatteryCheck(&sim808);
+        debugSend2(sim808.batteryPercentage, 2);
+        delayMilliIT(1000);
+        simGPSStatus();
+        delayMilliIT(1000);
+        simGPSInfo();
+        delayMilliIT(1000);
+        simSignalQuality();
+        delayMilliIT(1000);
+        resetWatchdog();
+
+    }
+    NVIC_SystemReset();
+
     #if BMP180_ATTACHED
 /** \name Check Barometer */
     bmp180_get_calib_param(&Sensor1);
@@ -154,6 +188,10 @@ int main(void)
         recievePacket();
         if(counter%25==0)
         {
+            ///Get Battery Percentage
+            simBatteryCheck(&sim808);
+            debugSend2(sim808.batteryPercentage, 2);
+
             ///Get GPS Coords
 
 
@@ -172,7 +210,7 @@ int main(void)
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             //sprintf(strtosend, "%d", counter);
-            parseData(strtosend, "latcoord", "lngcoor", pressure1, "placehold");
+            parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.batteryPercentage);///IF IT DOESNT SEND THEN CHECK batt percentage array size and add end character
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
         }

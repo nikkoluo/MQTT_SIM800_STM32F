@@ -27,6 +27,12 @@ typedef enum  {
 	STATE_PDPDEACT,
 } tcp_state;
 
+struct sim808_t {
+    char * batteryPercentage;
+    //add GPS longitude
+    //add GPS latitude
+
+};
 
 void simInit(void);
 void simSend(const char* data);
