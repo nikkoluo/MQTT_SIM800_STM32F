@@ -232,7 +232,7 @@ void simPinCheck()
 void simBatteryCheck(struct sim808_t * sim808)
 {
     char ptrBat;
-    char Batt[2];
+    char Batt[3];
     uint32_t counter=0;
     flushReceiveBuffer();
     simSend("AT+CBC");
@@ -247,16 +247,15 @@ void simBatteryCheck(struct sim808_t * sim808)
     }
     if(rxBufLen>0)
     {
-        debugSend(rxBuf);
+        //debugSend(rxBuf);
         /**
-        AT+CBC
 
         +CBC: 0,75,4004
 
         OK
         */
-        memcpy(&Batt[0], &rxBuf[17], 2);//pointer to the battery percentage
-        //debugSend2(Batt, 2);
+        memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
+       // debugSend2(Batt, 2);
         sim808->batteryPercentage = &Batt;
     }
     else debugSend("No response");

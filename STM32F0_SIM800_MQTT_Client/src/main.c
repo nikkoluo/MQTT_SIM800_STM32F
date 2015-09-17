@@ -82,7 +82,7 @@ int main(void)
     gpioInit();
     debugInit();
     simInit();
-
+    servoInit();
 
     debugSend("\n----begin----\n");
 
@@ -94,35 +94,28 @@ int main(void)
     debugSend("\n----SIM On----\n");
     delayMilliIT(5000);
 
-    simPinCheck();
+    //simPinCheck();
 
-    simEnableCharge();
+    //simEnableCharge();
 
-    delayMilli(20);
+ /*   delayMilli(20);
     simGPSStatus();
 
     delayMilli(20);
     simGPSStart();
 
-    delayMilliIT(3000);
+    delayMilliIT(2000);
     simGPSRestartCold();
-    delayMilliIT(20000);
-    simGPSSResetWarm();
     while(1)
     {
+        delayMilliIT(1000);
         simBatteryCheck(&sim808);
         debugSend2(sim808.batteryPercentage, 2);
-        delayMilliIT(1000);
-        simGPSStatus();
-        delayMilliIT(1000);
-        simGPSInfo();
-        delayMilliIT(1000);
-        simSignalQuality();
-        delayMilliIT(1000);
+
         resetWatchdog();
 
     }
-    NVIC_SystemReset();
+    NVIC_SystemReset();*/
 
     #if BMP180_ATTACHED
 /** \name Check Barometer */
@@ -151,7 +144,7 @@ int main(void)
         NVIC_SystemReset();
     }
 
-    servoInit();
+
 
     ///Subscribe to "test/action" topic
     mqtt.txbuff.pointer= mqtt.txbuff.start;
@@ -190,8 +183,9 @@ int main(void)
         {
             ///Get Battery Percentage
             simBatteryCheck(&sim808);
+            debugSend("Batt check done: ");
             debugSend2(sim808.batteryPercentage, 2);
-
+            debugSend("\n");
             ///Get GPS Coords
 
 
@@ -210,7 +204,7 @@ int main(void)
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             //sprintf(strtosend, "%d", counter);
-            parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.batteryPercentage);///IF IT DOESNT SEND THEN CHECK batt percentage array size and add end character
+            parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.batteryPercentage);///IF IT DOESNT SEND THEN CHECK battery percentage array size and add end character
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
         }
@@ -231,6 +225,7 @@ void gpioInit()
      * PA8 -
      * PA9  - TX1 - debug
      * PA10 - RX1 - debug
+     * PA15 - PWM - servo
      * PB0 - Test pad
      * PB1 - Test pad
      * PB2 - Test pad
@@ -245,8 +240,9 @@ void gpioInit()
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1); // TIM3_CH1
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_1);//TX1
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_1);//RX1
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_2);//TIM2_CH1_Servo
     GPIO_InitTypeDef GPIO_InitStruct;
-        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_6|GPIO_Pin_9|GPIO_Pin_10;
+        GPIO_InitStruct.GPIO_Pin =GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_6|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_15;
         GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
         GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
         GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
@@ -354,6 +350,15 @@ void recievePacket(void)
 
 void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, char *battery)
 {
+    char * test = sim808.batteryPercentage;
+    USART_SendData(USART1, test[0]);
+    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%c}", -33-rand()%3, 18+rand()%3, altitude, '7');
+}
 
-    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, altitude, 80+rand()%30);
+void parseGPS(char * CBCstring, char * battery)
+{
+    char charge[10], voltage[5];
+
+    sscanf(CBCstring, "%[^,],%[^,],%[^,]", &charge, &battery, &CBCstring);
+
 }
