@@ -29,6 +29,7 @@ typedef enum  {
 
 struct sim808_t {
     char * batteryPercentage;
+    uint8_t battery;
     //add GPS longitude
     //add GPS latitude
 

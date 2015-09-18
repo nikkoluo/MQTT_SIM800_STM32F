@@ -255,8 +255,10 @@ void simBatteryCheck(struct sim808_t * sim808)
         OK
         */
         memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
-       // debugSend2(Batt, 2);
-        sim808->batteryPercentage = &Batt;
+        debugSend2(Batt, 2);
+        sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
+        USART_SendData(USART1,  sim808->battery);
+
     }
     else debugSend("No response");
 }

@@ -98,7 +98,7 @@ int main(void)
 
     //simEnableCharge();
 
- /*   delayMilli(20);
+  /*  delayMilli(20);
     simGPSStatus();
 
     delayMilli(20);
@@ -106,11 +106,14 @@ int main(void)
 
     delayMilliIT(2000);
     simGPSRestartCold();
+    simNoEcho();
     while(1)
     {
         delayMilliIT(1000);
-        simBatteryCheck(&sim808);
-        debugSend2(sim808.batteryPercentage, 2);
+        //simBatteryCheck(&sim808);
+        servoNone();
+        delayMilliIT(1000);
+        servoDown();
 
         resetWatchdog();
 
@@ -204,7 +207,7 @@ int main(void)
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             //sprintf(strtosend, "%d", counter);
-            parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.batteryPercentage);///IF IT DOESNT SEND THEN CHECK battery percentage array size and add end character
+            parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.battery);///IF IT DOESNT SEND THEN CHECK battery percentage array size and add end character
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
         }
@@ -340,6 +343,11 @@ void recievePacket(void)
             servoDrop();
             debugSend("- - - going drop");
         }
+        if(mqttPacket[18]=='E')
+        {
+            servoNone();
+            debugSend("- - - neutral position\n");
+        }
     }
 
 
@@ -348,11 +356,10 @@ void recievePacket(void)
 }
 
 
-void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, char *battery)
+void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, uint8_t battery)
 {
-    char * test = sim808.batteryPercentage;
-    USART_SendData(USART1, test[0]);
-    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%c}", -33-rand()%3, 18+rand()%3, altitude, '7');
+
+    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, altitude, battery);
 }
 
 void parseGPS(char * CBCstring, char * battery)

@@ -29,7 +29,7 @@ void servoInit()
     TIM_Cmd(TIM2, ENABLE);
     TIM_OC1PreloadConfig(TIM2, TIM_OCPreload_Enable);
     TIM_CtrlPWMOutputs(TIM2, ENABLE);
-    servoSet(1390);
+    servoNone();
 }
 
 void servoSet(uint16_t nsOnTime)
@@ -39,13 +39,13 @@ void servoSet(uint16_t nsOnTime)
 
 void servoUp()
 {
-    servoSet(1925);
+    servoSet(1955);
 }
 
 
 void servoDown()
 {
-    servoSet(1535);
+    servoSet(1545);
 }
 
 
@@ -56,5 +56,5 @@ void servoDrop()
 
 void servoNone()
 {
-    servoSet(1390);
+    servoSet(1770);
 }
