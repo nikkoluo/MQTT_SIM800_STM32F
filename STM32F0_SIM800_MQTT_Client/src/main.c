@@ -106,19 +106,20 @@ int main(void)
 
     delayMilliIT(2000);
     simGPSRestartCold();
-    simNoEcho();
+
     bmp180_get_calib_param(&Sensor1);*/
+    simNoEcho();
     while(1)
     {
         delayMilliIT(2000);
-        //simBatteryCheck(&sim808);
-        parseData(strtosend, "-11", "25", 100903, 80);
+        //simParseGSMLoc(&sim808);
+        simBatteryCheck(&sim808);
+
+        sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
         debugSend(strtosend);
         debugSend("\n");
         delayMilliIT(2000);
-        //simParseGSMLoc(&sim808);
         resetWatchdog();
-
     }
     NVIC_SystemReset();
 
@@ -134,12 +135,9 @@ int main(void)
     whatStateAmIIn(&current_state);
     if(current_state!= STATE_CONNECTED)
         simConnect();
-    debugSend("pos 1");
     ///Authenticate with the MQTT broker
     nethandler_umqtt_init(&mqtt);
-    debugSend("pos 4");
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-    debugSend("pos 3");
     recievePacket();
     if(strstr(rxBuf, connackAccept) != NULL)
         debugSend("MQTT Connection accepted");
@@ -205,12 +203,21 @@ int main(void)
         ///MQTT Tranmit packet
         if(counter%25==0)
         {
-            debugSend("\n-transmit-");
+            debugSend("\n-transmit1-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             //sprintf(strtosend, "%d", counter);
-            parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.battery);///IF IT DOESNT SEND THEN CHECK battery percentage array size and add end character
+            parseData(strtosend, "-33.33", "25", pressure1, sim808.battery);
+           // parseData(strtosend, "latcoord", "lngcoor", pressure1, sim808.battery);///IF IT DOESNT SEND THEN CHECK battery percentage array size and add end character
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+
+            delayMilliIT(20);
+            debugSend("\n-transmit2-");
+            sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            umqtt_publish(&mqtt, "test/data", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
         }
     }
@@ -350,10 +357,22 @@ void recievePacket(void)
             servoNone();
             debugSend("- - - neutral position\n");
         }
+        if(mqttPacket[18]=='Q')
+        {
+            debugSend("- - - QUIT OPERATIONS and DISCONNECT\n");
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            umqtt_disconnect(&mqtt);
+            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+            while(1)
+            {
+                debugSend("- - - QUIT OPERATIONS and DISCONNECT\n");
+                resetWatchdog();
+                delayMilliIT(2000);
+            }
+
+        }
     }
-
-
-
 
 }
 
@@ -361,8 +380,7 @@ void recievePacket(void)
 void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, uint8_t battery)
 {
 
-    //sprintf(payload, "{\"lat\":%s,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, altitude, battery);
-    sprintf(payload, "{\"lat\":%s,\"lng\":%d, \"alt\":%d, \"bat\":%d}", latitude, 18+rand()%3, altitude, battery);
+    sprintf(payload, "{\"lat\":%s,\"lng\":%s, \"alt\":%d, \"bat\":%d}", latitude, longitude, altitude, battery);
 }
 
 void parseGPS(char * CBCstring, char * battery)

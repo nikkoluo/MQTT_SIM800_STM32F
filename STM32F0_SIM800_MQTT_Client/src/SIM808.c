@@ -95,36 +95,6 @@ void simTransmit(char * stringToSend, uint16_t length)
 
 }
 
-/*
-void simEnterDataMode()
-{
-    uint8_t wait=1;
-    flushReceiveBuffer();
-    simSend("ATO");
-    while(wait)
-    {
-        delayMilli(100);
-        if(strstr(rxBuf, "CONNECT") != NULL)
-        {
-            wait=0;
-        }
-        if(strstr(rxBuf, "ERROR") != NULL)
-        {
-            flushReceiveBuffer();
-            simSend("ATO");
-        }
-        debugSend(rxBuf);
-        debugSend("waiting------\n");
-    }
-    debugSend("exited----------\n");
-    flushReceiveBuffer();
-}
-void simExitDataMode()
-{
-    delayMilliIT(1000);
-    simSendRaw("+++");
-    delayMilliIT(1000);
-}*/
 
 
 void flushReceiveBuffer()
@@ -231,8 +201,7 @@ void simPinCheck()
 
 void simBatteryCheck(struct sim808_t * sim808)
 {
-    char ptrBat;
-    char Batt[3];
+    char charge[10], batt[4], nullstr[20];
     uint32_t counter=0;
     flushReceiveBuffer();
     simSend("AT+CBC");
@@ -254,10 +223,15 @@ void simBatteryCheck(struct sim808_t * sim808)
 
         OK
         */
-        memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
+        //sim808->charge = rxBuf[8];//charge indicator
+        /*memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
         debugSend2(Batt, 2);
         sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
-        USART_SendData(USART1,  sim808->battery);
+        USART_SendData(USART1,  sim808->battery);*/
+        sscanf(rxBuf, "%*[^:]: %[^,],%[^,],%[^,]", &charge, &batt, &nullstr);
+        sim808->charge = charge;
+        sim808->batteryPercentage = batt;
+        //sim808->longitudeCoord = longitudeCoord;
 
     }
     else debugSend("No response");
@@ -363,12 +337,8 @@ void simParseGSMLoc(struct sim808_t * sim808)
     debugSend(gsmLocString);
 
     sscanf(gsmLocString, "%[^,],%[^,],%[^,],%[^,]", &locationCode, &longitudeCoord, &latitudeCoord, &remainder);
-    debugSend("\nLoc code: ");
-    debugSend(locationCode);
-    debugSend("\nLongitude: ");
-    debugSend(longitudeCoord);
-    debugSend("\nLatitude code: ");
-    debugSend(latitudeCoord);
+    sim808->latitudeCoord = latitudeCoord;
+    sim808->longitudeCoord = longitudeCoord;
 }
 
 void simEnableCharge()
