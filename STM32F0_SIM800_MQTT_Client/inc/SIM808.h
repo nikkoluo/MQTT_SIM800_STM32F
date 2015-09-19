@@ -36,6 +36,7 @@ struct sim808_t {
     char * longitudeCoord;
     char * fixStatus;
     char * numSat;
+    char * time;
 
 };
 

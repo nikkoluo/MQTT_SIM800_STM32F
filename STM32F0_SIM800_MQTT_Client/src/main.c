@@ -94,7 +94,7 @@ int main(void)
     debugSend("\n----SIM On----\n");
     delayMilliIT(5000);
 
-
+    simNoEcho();
     initGPS();///only AFTER SIM808 has turned on
 
 
@@ -108,30 +108,32 @@ int main(void)
     simGPSRestartCold();
 
     bmp180_get_calib_param(&Sensor1);*/
-    simNoEcho();
+
+
+
     #if BMP180_ATTACHED
     /** \name Check Barometer */
     bmp180_get_calib_param(&Sensor1);
     #endif
-    debugSend("\n----No BMP180----\n");
     while(1)
     {
         delayMilliIT(2000);
-        //simParseGSMLoc(&sim808);
         simBatteryCheck(&sim808);
+        simGPSInfo(&sim808);
+        delayMilliIT(500);
+        simGPSStatus(&sim808);
+        delayMilliIT(500);
         pressure1 = pressureAverage(&Sensor1);
 
-
-        sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%s,\"numSat\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat);
+        sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat, sim808.time);
         debugSend(strtosend);
         debugSend("\n");
         sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
         debugSend(strtosend);
         debugSend("\n");
-        sprintf(strtosend, "{\"pressure1\":%s,\"pressure2\":%s,\"ultrasonic\":%s}", pressure1, pressure1, usDistance);
+        sprintf(strtosend, "{\"pressure1\":%i,\"pressure2\":%i,\"ultrasonic\":%s}", pressure1, pressure2, "0");
         debugSend(strtosend);
         debugSend("\n");
-        delayMilliIT(2000);
         resetWatchdog();
     }
     NVIC_SystemReset();
@@ -224,7 +226,7 @@ int main(void)
             debugSend("\n-transmit2-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "{\"pressure1\":%s,\"pressure2\":%s,\"ultrasonic\":%s}", pressure1, pressure1, usDistance);
+            sprintf(strtosend, "{\"pressure1\":%s,\"pressure2\":%s,\"ultrasonic\":%s}", pressure1, pressure1, "0");
             umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 

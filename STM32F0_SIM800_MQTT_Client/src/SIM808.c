@@ -201,7 +201,7 @@ void simPinCheck()
 
 void simBatteryCheck(struct sim808_t * sim808)
 {
-    char charge[10], batt[4], nullstr[20];
+    static char charge[10], batt[4], nullstr[20];
     uint32_t counter=0;
     flushReceiveBuffer();
     simSend("AT+CBC");
@@ -216,7 +216,7 @@ void simBatteryCheck(struct sim808_t * sim808)
     }
     if(rxBufLen>0)
     {
-        //debugSend(rxBuf);
+        debugSend(rxBuf);
         /**
 
         +CBC: 0,75,4004
@@ -229,6 +229,10 @@ void simBatteryCheck(struct sim808_t * sim808)
         sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
         USART_SendData(USART1,  sim808->battery);*/
         sscanf(rxBuf, "%*[^:]: %[^,],%[^,],%[^,]", &charge, &batt, &nullstr);
+        debugSend("\ncharge");
+        debugSend(charge);
+        debugSend("\nbatt");
+        debugSend(batt);
         sim808->charge = charge;
         sim808->batteryPercentage = batt;
         //sim808->longitudeCoord = longitudeCoord;
@@ -284,15 +288,16 @@ void simGPSSResetWarm()
     else debugSend("No response");
 }
 
-void initGPS();
+void initGPS()
 {
     simGPSStart();
 
     delayMilliIT(2000);
     simGPSRestartCold();
 }
-void simGPSInfo()
+void simGPSInfo(struct sim808_t * sim808)
 {
+    static char longitude[30], latitude[30], time[30], TTFF[20], numSat[5];
     uint32_t counter=0;
     flushReceiveBuffer();
     simSend("AT+CGPSINF=0");
@@ -302,24 +307,32 @@ void simGPSInfo()
         debugSend(rxBuf);
         /**
 
-        0,-839.472718,4111.710553,172.852158,20130923214109.000,41,12,0.000000,208.770493
+        +CGPSINF: 0,8960.000000,0.000000,137.000000,19800106000110.000,0,0,0.000000,0.000000
 
         OK
         */
-        //sim808->charge = rxBuf[8];//charge indicator
-        /*memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
-        debugSend2(Batt, 2);
-        sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
-        USART_SendData(USART1,  sim808->battery);*/
-        sscanf(rxBuf, "%*[^:]: %[^,],%[^,],%[^,]", &charge, &batt, &nullstr);
-        sim808->charge = charge;
-        sim808->batteryPercentage = batt;
-        //sim808->longitudeCoord = longitudeCoord;
+        sscanf(rxBuf, "%*[^,],%[^,],%[^,],%*[^,],%[^,],%c", &longitude, &latitude, &time, &TTFF, &numSat);//mode,longitude,latitude,altitude,UTCTime,TTFF,numSatelites,speed,course
+       /* debugSend("\ntime: ");
+        debugSend(time);
+        debugSend("\nlong: ");
+        debugSend(longitude);
+        debugSend("\nlat: ");
+        debugSend(latitude);
+        debugSend("\nTTFF: ");
+        debugSend(TTFF);
+        debugSend("\nnumSat: ");
+        debugSend(numSat);*/
+        sim808->longitudeCoord = longitude;
+        sim808->latitudeCoord = latitude;
+        sim808->numSat = 0;
+        sim808->time = time;
+
     }
     else debugSend("No response");
 }
-void simGPSStatus()
+void simGPSStatus(struct sim808_t * sim808)
 {
+    static char fix[40];
     uint32_t counter=0;
     flushReceiveBuffer();
     simSend("AT+CGPSSTATUS?");
@@ -341,15 +354,8 @@ void simGPSStatus()
 
         OK
         */
-        //sim808->charge = rxBuf[8];//charge indicator
-        /*memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
-        debugSend2(Batt, 2);
-        sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
-        USART_SendData(USART1,  sim808->battery);*/
-        sscanf(rxBuf, "%*[^:]: %[^,],%[^,],%[^,]", &charge, &batt, &nullstr);
-        sim808->charge = charge;
-        sim808->batteryPercentage = batt;
-        //sim808->longitudeCoord = longitudeCoord;
+        sscanf(rxBuf, "%*[^:]: %[^x]", &fix);
+        sim808->fixStatus = fix;
     }
     else debugSend("No response");
 }
