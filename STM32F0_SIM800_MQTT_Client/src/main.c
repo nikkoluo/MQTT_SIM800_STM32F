@@ -69,7 +69,7 @@ int main(void)
     uint16_t index=0;
     double lng, lat;
     uint8_t data1, data2;
-    int32_t pressure1=0, pressure2 =0;
+    static int32_t pressure1=0, pressure2 =0;
     char latCoord[20], longCoord[20];
 /** Initialise functions
 ***************************
@@ -92,30 +92,19 @@ int main(void)
     delayMilliIT(2500);
     GPIO_SetBits(GPIOA, GPIO_Pin_5);
     debugSend("\n----SIM On----\n");
-    delayMilliIT(5000);
+    delayMilliIT(6000);
 
     simNoEcho();
+    delayMilliIT(20);
     initGPS();///only AFTER SIM808 has turned on
-
-
-  /*  delayMilli(20);
-    simGPSStatus();
-
-    delayMilli(20);
-    simGPSStart();
-
-    delayMilliIT(2000);
-    simGPSRestartCold();
-
-    bmp180_get_calib_param(&Sensor1);*/
-
-
 
     #if BMP180_ATTACHED
     /** \name Check Barometer */
     bmp180_get_calib_param(&Sensor1);
     #endif
-    while(1)
+
+
+ /*   while(1)
     {
         delayMilliIT(2000);
         simBatteryCheck(&sim808);
@@ -131,7 +120,7 @@ int main(void)
         sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
         debugSend(strtosend);
         debugSend("\n");
-        sprintf(strtosend, "{\"pressure1\":%i,\"pressure2\":%i,\"ultrasonic\":%s}", pressure1, pressure2, "0");
+        sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%s}", (int32_t)pressure1, pressure2, "0");
         debugSend(strtosend);
         debugSend("\n");
         resetWatchdog();
@@ -151,10 +140,10 @@ int main(void)
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
     recievePacket();
     if(strstr(rxBuf, connackAccept) != NULL)
-        debugSend("MQTT Connection accepted");
+        debugSend("\nMQTT Connection accepted");
     else
     {
-        debugSend("MQTT Connection refused");
+        debugSend("\nMQTT Connection refused");
         NVIC_SystemReset();
     }
 
@@ -201,7 +190,8 @@ int main(void)
             debugSend2(sim808.batteryPercentage, 2);
             debugSend("\n");
             ///Get GPS Coords
-
+            simGPSInfo(&sim808);
+            simGPSStatus(&sim808);
 
             ///Get Altitude
             pressure1 = pressureAverage(&Sensor1);
@@ -214,11 +204,11 @@ int main(void)
         ///MQTT Tranmit packet
         if(counter%25==0)
         {
+
             debugSend("\n-transmit1-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
-            //parseData(strtosend, "-33.33", "25", pressure1, sim808.battery);
-            sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%s,\"numSat\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat);
+            sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, "0", sim808.time);
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 
@@ -226,7 +216,7 @@ int main(void)
             debugSend("\n-transmit2-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "{\"pressure1\":%s,\"pressure2\":%s,\"ultrasonic\":%s}", pressure1, pressure1, "0");
+            sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%s}", pressure1, pressure1, "0");
             umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 
