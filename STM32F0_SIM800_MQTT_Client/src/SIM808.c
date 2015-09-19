@@ -283,6 +283,14 @@ void simGPSSResetWarm()
     }
     else debugSend("No response");
 }
+
+void initGPS();
+{
+    simGPSStart();
+
+    delayMilliIT(2000);
+    simGPSRestartCold();
+}
 void simGPSInfo()
 {
     uint32_t counter=0;
@@ -292,6 +300,21 @@ void simGPSInfo()
     if(rxBufLen>0)
     {
         debugSend(rxBuf);
+        /**
+
+        0,-839.472718,4111.710553,172.852158,20130923214109.000,41,12,0.000000,208.770493
+
+        OK
+        */
+        //sim808->charge = rxBuf[8];//charge indicator
+        /*memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
+        debugSend2(Batt, 2);
+        sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
+        USART_SendData(USART1,  sim808->battery);*/
+        sscanf(rxBuf, "%*[^:]: %[^,],%[^,],%[^,]", &charge, &batt, &nullstr);
+        sim808->charge = charge;
+        sim808->batteryPercentage = batt;
+        //sim808->longitudeCoord = longitudeCoord;
     }
     else debugSend("No response");
 }
@@ -312,6 +335,21 @@ void simGPSStatus()
     if(rxBufLen>0)
     {
         debugSend(rxBuf);
+        /**
+
+        +CGPSSTATUS: Location 3D Fix
+
+        OK
+        */
+        //sim808->charge = rxBuf[8];//charge indicator
+        /*memcpy(&Batt[0], &rxBuf[10], 2);//pointer to the battery percentage
+        debugSend2(Batt, 2);
+        sim808->battery = 10*(Batt[0] - '0') + Batt[1] - '0';
+        USART_SendData(USART1,  sim808->battery);*/
+        sscanf(rxBuf, "%*[^:]: %[^,],%[^,],%[^,]", &charge, &batt, &nullstr);
+        sim808->charge = charge;
+        sim808->batteryPercentage = batt;
+        //sim808->longitudeCoord = longitudeCoord;
     }
     else debugSend("No response");
 }
