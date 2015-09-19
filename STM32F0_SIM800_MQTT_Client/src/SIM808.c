@@ -342,7 +342,7 @@ void simGPSStatus()
     else debugSend("No response");
 }
 
-void simGSMLoc(struct sim808_t * sim808)
+void simGSMLoc(char * gsmLocString)
 {
     uint32_t counter=0;
     flushReceiveBuffer();
@@ -353,6 +353,22 @@ void simGSMLoc(struct sim808_t * sim808)
         debugSend(rxBuf);
     }
     else debugSend("No response");
+}
+
+void simParseGSMLoc(struct sim808_t * sim808)
+{
+    static char gsmLocString[100]="CIPGSMLOC: 0,19.667806,49.978185,2014/03/20,14:12:27", locationCode[20]="", longitudeCoord[20]="", latitudeCoord[20]="", remainder[30]="";
+    //simGSMLoc(&gsmLocString);
+    debugSend("\n+-+-Response ");
+    debugSend(gsmLocString);
+
+    sscanf(gsmLocString, "%[^,],%[^,],%[^,],%[^,]", &locationCode, &longitudeCoord, &latitudeCoord, &remainder);
+    debugSend("\nLoc code: ");
+    debugSend(locationCode);
+    debugSend("\nLongitude: ");
+    debugSend(longitudeCoord);
+    debugSend("\nLatitude code: ");
+    debugSend(latitudeCoord);
 }
 
 void simEnableCharge()

@@ -6,7 +6,7 @@
 /**\name	DEBUGGING ENABLER       */
 /***************************************************************/
 #define BMPVERBOSE 0
-#define BMPVERBOSE2 0
+#define BMPVERBOSE2 1
 
 /***************************************************************/
 /**\name	I2C ADDRESS DEFINITION OF BMP180       */
@@ -15,7 +15,7 @@
 
 #define BARO1_WRITE 0xEE
 #define BARO1_READ 0xEF
-#define BMP180_ATTACHED 0
+#define BMP180_ATTACHED 1
 
 /***************************************************************/
 /**\name	ERROR CODE DEFINITIONS    */

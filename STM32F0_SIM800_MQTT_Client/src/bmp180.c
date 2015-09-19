@@ -120,14 +120,14 @@ void readRawTemperature(int32_t *temperature)
     read16(BMP180_ADC_OUT_MSB_REG, &t);
     *temperature = t;
     /*uncomment to enable debugging*/
-    #if BMPVERBOSE2
+    #if BMPVERBOSE
     _printfLngS("raw temperature: ", t);
     #endif
 }
 
 void readRawPressure( int32_t *pressure, uint8_t oss)
 {
-    #if BMPVERBOSE2
+    #if BMPVERBOSE
     debugSend("starting raw pressure read\n");
     #endif
     uint8_t  p8;
@@ -170,7 +170,7 @@ void readRawPressure( int32_t *pressure, uint8_t oss)
     #endif
     *pressure = p32;
     /*uncomment to enable debugging*/
-    #if BMPVERBOSE2
+    #if BMPVERBOSE
     _printfLngS("raw pressure: ", p32);
     #endif
 }

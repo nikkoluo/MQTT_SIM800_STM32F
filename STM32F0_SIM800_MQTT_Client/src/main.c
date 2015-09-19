@@ -65,12 +65,12 @@ struct sim808_t sim808;
 
 int main(void)
 {
-    uint8_t flagNetReg=0, flagAlive=0, strtosend[20];
+    uint8_t flagNetReg=0, flagAlive=0, strtosend[40];
     uint16_t index=0;
     double lng, lat;
     uint8_t data1, data2;
     int32_t pressure1=0, pressure2 =0;
-
+    char latCoord[20], longCoord[20];
 /** Initialise functions
 ***************************
 *   initTiming
@@ -107,18 +107,20 @@ int main(void)
     delayMilliIT(2000);
     simGPSRestartCold();
     simNoEcho();
+    bmp180_get_calib_param(&Sensor1);*/
     while(1)
     {
-        delayMilliIT(1000);
+        delayMilliIT(2000);
         //simBatteryCheck(&sim808);
-        servoNone();
-        delayMilliIT(1000);
-        servoDown();
-
+        parseData(strtosend, "-11", "25", 100903, 80);
+        debugSend(strtosend);
+        debugSend("\n");
+        delayMilliIT(2000);
+        //simParseGSMLoc(&sim808);
         resetWatchdog();
 
     }
-    NVIC_SystemReset();*/
+    NVIC_SystemReset();
 
     #if BMP180_ATTACHED
 /** \name Check Barometer */
@@ -359,7 +361,8 @@ void recievePacket(void)
 void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, uint8_t battery)
 {
 
-    sprintf(payload, "{\"lat\":%d,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, altitude, battery);
+    //sprintf(payload, "{\"lat\":%s,\"lng\":%d, \"alt\":%d, \"bat\":%d}", -33-rand()%3, 18+rand()%3, altitude, battery);
+    sprintf(payload, "{\"lat\":%s,\"lng\":%d, \"alt\":%d, \"bat\":%d}", latitude, 18+rand()%3, altitude, battery);
 }
 
 void parseGPS(char * CBCstring, char * battery)
