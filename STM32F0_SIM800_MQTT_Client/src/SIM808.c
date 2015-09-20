@@ -238,7 +238,7 @@ void simBatteryCheck(struct sim808_t * sim808)
         //sim808->longitudeCoord = longitudeCoord;
 
     }
-    else debugSend("No response");
+    else debugSend("No response\n");
 }
 
 void simGPSStart()
@@ -518,12 +518,12 @@ void checkInitalStatus(tcp_state* current_state)
     uint8_t countdown;
     char pass=0;
     #if SIMVERBOSE
-    debugSend("checking the sim808's state");
+    debugSend("checking the sim808's state\n");
     #endif
 ///CHECK STATUS OF SIM
     if(simPing())
     {///IF SUCCCESS THEN TEST NETWORK REGISTRATION
-        debugSend("ping-resp");
+        debugSend("ping-resp\n");
         current_state = STATE_ON;
     }
     else
@@ -542,7 +542,7 @@ void checkInitalStatus(tcp_state* current_state)
     ///IF STATUS IS FINE THEN INITIALISE THE SIM
     countdown=0;
     pass = 0;
-    while((countdown<5)&&(pass==0))
+    while((countdown<6)&&(pass==0))
     {
         countdown++;
         delayMilliIT(6000);
@@ -607,7 +607,7 @@ void checkInitalStatus(tcp_state* current_state)
         NVIC_SystemReset();
     }
 
-    debugSend("--IP session reset--");
+    debugSend("--IP session reset--\n");
 
     ///Disable the auto send packet
     flushReceiveBuffer();

@@ -208,7 +208,7 @@ int main(void)
             debugSend("\n-transmit1-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, "0", sim808.time);
+            sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":\"%sx\",\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, "0", sim808.time);
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 
@@ -221,7 +221,7 @@ int main(void)
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 
             delayMilliIT(20);
-            debugSend("\n-transmit2-");
+            debugSend("\n-transmit3-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
@@ -375,7 +375,6 @@ void recievePacket(void)
             while(1)
             {
                 debugSend("- - - QUIT OPERATIONS and DISCONNECT\n");
-                resetWatchdog();
                 delayMilliIT(2000);
             }
 
