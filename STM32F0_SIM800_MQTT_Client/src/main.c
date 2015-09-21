@@ -6,9 +6,8 @@
 **********************************************************************/
 /*
    Last committed:     $Revision: 00 $
-   Last changed by:    $Author: $
-   Last changed date:  $Date:  $
-   ID:                 $Id:  $
+   Last changed by:    Brandon Piner
+   Last changed date:  21-09-2015
 
 **********************************************************************/
 #include "stm32f0xx_conf.h"
