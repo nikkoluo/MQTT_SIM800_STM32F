@@ -9,9 +9,7 @@
 #define SIMVERBOSE2 0
 
 
-/***************************************************************/
-/**\name	TYPE DEF'S      */
-/***************************************************************/
+/* Exported types ------------------------------------------------------------*/
 typedef enum  {
     STATE_OFF,
     STATE_ON,
@@ -39,9 +37,12 @@ struct sim808_t {
     char * time;
 
 };
+/* Exported constants --------------------------------------------------------*/
 
+/* Exported functions ------------------------------------------------------- */
 void simInit(void);
 void simSend(const char* data);
+void simTransmit(char * stringToSend, uint16_t length);
 int simReceive(const uint8_t* data, uint8_t length);
 uint8_t simAvailable(void);
 

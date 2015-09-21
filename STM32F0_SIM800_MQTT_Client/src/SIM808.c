@@ -1,10 +1,14 @@
 /**
- *
- * Driver for SIM808 network
- * Brandon Piner 2015
- *
- *
- */
+  ******************************************************************************
+  * @file    SIM808.c
+  * @author  Brandon Piner
+  * @version V1.0
+  * @date    21-September-2015
+  * @brief   Driver for SIM808 network
+  *
+  *
+  *
+  */
 
 #include "SIM808.h"
 #include "stm32f0xx_conf.h"
@@ -13,10 +17,13 @@
 #include "umqtt.h"
 #include "config.h"
 
-
+/* Private variables ---------------------------------------------------------*/
 char rxBuf[300];
 uint16_t rxBufLen =0;
 extern uint8_t msgTimout;
+/* Private function prototypes -----------------------------------------------*/
+
+/* Private functions ---------------------------------------------------------*/
 
 void simInit(void)
 {

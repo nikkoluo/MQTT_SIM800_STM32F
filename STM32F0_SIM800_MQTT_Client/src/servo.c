@@ -5,6 +5,10 @@ Copyright Brandon Piner 2015*/
 #include "stm32f0xx_conf.h"
 #include <stdio.h>
 
+/* Private variables ---------------------------------------------------------*/
+/* Private function prototypes -----------------------------------------------*/
+void servoSet(uint16_t nsOnTime);
+/* Private functions ---------------------------------------------------------*/
 void servoInit()
 {
 
