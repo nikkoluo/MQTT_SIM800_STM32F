@@ -32,7 +32,7 @@ void HCSR04_Init()
   /* TIM2 clock enable */
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
-  /* TIM2 chennel2 configuration : PA.01 */
+  /* TIM2 channel2 configuration : PA.01 */
   GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_1;
   GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -109,6 +109,8 @@ void HCSR04_Read(HCSR04_t * HCSR04)
     GPIO_SetBits(GPIOA, GPIO_Pin_0);
     for(i=0; i<40; i++);
     GPIO_ResetBits(GPIOA, GPIO_Pin_0);
+    HCSR04->Distance = Distance;
+    while(HCSR04->Distance == Distance);
     HCSR04->Distance = Distance;
 }
 

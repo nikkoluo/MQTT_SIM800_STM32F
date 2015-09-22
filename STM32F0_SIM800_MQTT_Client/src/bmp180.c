@@ -9,15 +9,17 @@ void I2CInit()
     GPIO_InitTypeDef GPIO_InitStruct;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_OD;
-    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_8|GPIO_Pin_9|GPIO_Pin_10|GPIO_Pin_11;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
 
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_1);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource8, GPIO_AF_1);//I2C1_SCL
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource9, GPIO_AF_1);//I2C1_SDA
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_1);//I2C2_SCL
+    GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_1);//I2C2_SDA
     GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    //Make sure GPIOInit is called before this function is called
+    /** Start I2C1*/
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
     I2C_InitTypeDef I2C_InitStruct;
     I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;
@@ -30,9 +32,24 @@ void I2CInit()
     I2C_Init(I2C1, &I2C_InitStruct);
 
     I2C_Cmd(I2C1, ENABLE);
+
+
+    /** Start I2C2*/
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+
+    I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;
+    I2C_InitStruct.I2C_Timing = 0x0010020B;
+    I2C_InitStruct.I2C_OwnAddress1 = 0x00;
+    I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;
+    I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+    I2C_InitStruct.I2C_AnalogFilter = I2C_AnalogFilter_Enable;
+    I2C_InitStruct.I2C_DigitalFilter=0;
+    I2C_Init(I2C2, &I2C_InitStruct);
+
+    I2C_Cmd(I2C2, ENABLE);
 }
 
-int32_t pressureAverage(struct bmp180_t* sensorX)
+int32_t pressureAverage(I2C_TypeDef* I2Cx, struct bmp180_t* sensorX)
 {
 #if BMP180_ATTACHED
     int32_t pressure=0, avgPressure=0;
@@ -47,7 +64,7 @@ int32_t pressureAverage(struct bmp180_t* sensorX)
     for(i=0; i<20; i++)
     {
 
-        getPressure(&pressure, &tempSensor);
+        getPressure(I2Cx, &pressure, &tempSensor);
         #if BMPVERBOSE
         _printfLngS("--Pressure ", pressure);
         #endif
@@ -65,45 +82,45 @@ int32_t pressureAverage(struct bmp180_t* sensorX)
  PRIVATE FUNCTIONS
  ***************************************************************************/
 
-static void writeCommand(char reg, char value)
+static void writeCommand(I2C_TypeDef* I2Cx, char reg, char value)
 {
     uint8_t i;
-    I2C_TransferHandling(I2C1, BARO1_WRITE, 2, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
-	while(I2C_GetFlagStatus(I2C1, I2C_ISR_TXIS) == RESET);
+    I2C_TransferHandling(I2Cx, BARO1_WRITE, 2, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
+	while(I2C_GetFlagStatus(I2Cx, I2C_ISR_TXIS) == RESET);
 
-	I2C_SendData(I2C1, reg);
+	I2C_SendData(I2Cx, reg);
 	for(i=0;i<200;i++);
-	I2C_SendData(I2C1, value);
-    I2C_GenerateSTOP(I2C1, ENABLE);
+	I2C_SendData(I2Cx, value);
+    I2C_GenerateSTOP(I2Cx, ENABLE);
 
 }
 
-void read8(uint8_t reg, uint8_t *value)
+void read8(I2C_TypeDef* I2Cx, uint8_t reg, uint8_t *value)
 {
     uint8_t i;
-    I2C_TransferHandling(I2C1, BARO1_WRITE, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
-	while(I2C_GetFlagStatus(I2C1, I2C_ISR_TXIS) == RESET);
-	I2C_SendData(I2C1, reg);
-    I2C_AcknowledgeConfig(I2C1, ENABLE);
-    I2C_TransferHandling(I2C1, BARO1_READ, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Read);
-	while(I2C_GetFlagStatus(I2C1, I2C_ISR_RXNE) == RESET);
-	i = I2C_ReceiveData(I2C1);
-    while(I2C_GetFlagStatus(I2C1, I2C_ISR_TC) == RESET);
-    I2C_GenerateSTOP(I2C1, ENABLE);
+    I2C_TransferHandling(I2Cx, BARO1_WRITE, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Write);
+	while(I2C_GetFlagStatus(I2Cx, I2C_ISR_TXIS) == RESET);
+	I2C_SendData(I2Cx, reg);
+    I2C_AcknowledgeConfig(I2Cx, ENABLE);
+    I2C_TransferHandling(I2Cx, BARO1_READ, 1, I2C_SoftEnd_Mode, I2C_Generate_Start_Read);
+	while(I2C_GetFlagStatus(I2Cx, I2C_ISR_RXNE) == RESET);
+	i = I2C_ReceiveData(I2Cx);
+    while(I2C_GetFlagStatus(I2Cx, I2C_ISR_TC) == RESET);
+    I2C_GenerateSTOP(I2Cx, ENABLE);
     *value =i;
     #if BMPVERBOSE
     _printfLngS("read8: ", i);
     #endif
 }
 
-void read16(uint8_t reg, uint32_t *value)
+void read16(I2C_TypeDef* I2Cx, uint8_t reg, uint32_t *value)
 {
     uint16_t i1=0, i2=0, i;
     uint16_t temp;
-    read8(reg, &i1);
+    read8(I2Cx, reg, &i1);
     //_printfU("-MSB ", i1);
     for(i=0; i<200; i++);
-    read8(reg+1, &i2);
+    read8(I2Cx, reg+1, &i2);
     //_printfU("-LSB ", i2);
     temp = (i1<<8) + i2;
     #if BMPVERBOSE
@@ -111,13 +128,13 @@ void read16(uint8_t reg, uint32_t *value)
     #endif
 	*value = temp;
 }
-void readRawTemperature(int32_t *temperature)
+void readRawTemperature(I2C_TypeDef* I2Cx, int32_t *temperature)
 {
     uint32_t i;
     int32_t t;
-    writeCommand(BMP180_CTRL_MEAS_REG, BMP180_T_MEASURE);
+    writeCommand(I2Cx,BMP180_CTRL_MEAS_REG, BMP180_T_MEASURE);
     for(i=0; i<20000; i++);//delay
-    read16(BMP180_ADC_OUT_MSB_REG, &t);
+    read16(I2Cx, BMP180_ADC_OUT_MSB_REG, &t);
     *temperature = t;
     /*uncomment to enable debugging*/
     #if BMPVERBOSE
@@ -125,7 +142,7 @@ void readRawTemperature(int32_t *temperature)
     #endif
 }
 
-void readRawPressure( int32_t *pressure, uint8_t oss)
+void readRawPressure(I2C_TypeDef* I2Cx, int32_t *pressure, uint8_t oss)
 {
     #if BMPVERBOSE
     debugSend("starting raw pressure read\n");
@@ -135,7 +152,7 @@ void readRawPressure( int32_t *pressure, uint8_t oss)
     int32_t  p32;
     uint32_t i;
 
-    writeCommand(BMP180_CTRL_MEAS_REG, BMP180_P_MEASURE + (oss << 6));
+    writeCommand(I2Cx,BMP180_CTRL_MEAS_REG, BMP180_P_MEASURE + (oss << 6));
     #if BMPVERBOSE
     _printfU("still good:",1);
     #endif
@@ -143,7 +160,7 @@ void readRawPressure( int32_t *pressure, uint8_t oss)
     #if BMPVERBOSE
     _printfU("still good:",2);
     #endif
-    read16(BMP180_ADC_OUT_MSB_REG, &p16);
+    read16(I2Cx, BMP180_ADC_OUT_MSB_REG, &p16);
     #if BMPVERBOSE
     _printfLngU("check pre <<8:",p16);
     #endif
@@ -155,7 +172,7 @@ void readRawPressure( int32_t *pressure, uint8_t oss)
     #if BMPVERBOSE
     _printfLngU("check p16 = p32:",p32);
     #endif
-    read8(BMP180_ADC_OUT_MSB_REG+2, &p8);
+    read8(I2Cx, BMP180_ADC_OUT_MSB_REG+2, &p8);
     #if BMPVERBOSE
     _printfU("check p8:",p8);
     #endif
@@ -175,7 +192,7 @@ void readRawPressure( int32_t *pressure, uint8_t oss)
     #endif
 }
 
-void getPressure(int32_t *pressure, struct bmp180_t* sensorX)
+void getPressure(I2C_TypeDef* I2Cx, int32_t *pressure, struct bmp180_t* sensorX)
 {
 
   int32_t  ut = 0, up = 0, compp = 0;
@@ -183,8 +200,8 @@ void getPressure(int32_t *pressure, struct bmp180_t* sensorX)
   uint32_t b4, b7;
 
   /* Get the raw pressure and temperature values */
-  readRawTemperature(&ut);
-  readRawPressure(&up, sensorX->mode);
+  readRawTemperature(I2Cx, &ut);
+  readRawPressure(I2Cx, &up, sensorX->mode);
 
   /* Temperature compensation */
   int32_t X1 = (ut - (int32_t)sensorX->calib_param.ac6) * ((int32_t)sensorX->calib_param.ac5) >> 15;
@@ -224,7 +241,7 @@ _printfLngS("B5: ", b5);
 void checkAttached(void)
 {
     uint8_t deviceID=0;
-    read8(0xD0, &deviceID);
+    read8(I2C1, 0xD0, &deviceID);
     if (deviceID==0)
     {
         #define BMP180_ATTACHED 0
@@ -235,12 +252,12 @@ void checkAttached(void)
     }
 }
 
-void getTemperature(float *temp, struct bmp180_t* sensorX)
+void getTemperature(I2C_TypeDef* I2Cx, float *temp, struct bmp180_t* sensorX)
 {
   int32_t UT, X1, X2, B5;     // following ds convention
   float t;
 
-  readRawTemperature(&UT);
+  readRawTemperature(I2Cx, &UT);
 
   X1 = (UT - (int32_t)sensorX->calib_param.ac6) * ((int32_t)sensorX->calib_param.ac5) >> 15;
   X2 = ((int32_t)sensorX->calib_param.mc << 11) / (X1+(int32_t)sensorX->calib_param.md);
@@ -254,54 +271,54 @@ void getTemperature(float *temp, struct bmp180_t* sensorX)
   #endif
 }
 
-void bmp180_get_calib_param(struct bmp180_t* sensorX)
+void bmp180_get_calib_param(I2C_TypeDef* I2Cx, struct bmp180_t* sensorX)
 {
 
     uint16_t unsignedShortData, i;
     char debugString[100]="";
 #if BMP180_ATTACHED
     sensorX->mode =3;
-    read16(0xAA, &unsignedShortData);
+    read16(I2Cx, 0xAA, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.ac1 = (int16_t)unsignedShortData;
 
-    read16(0xAC, &unsignedShortData);
+    read16(I2Cx, 0xAC, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.ac2 = (int16_t)unsignedShortData;
 
-    read16(0xAE, &unsignedShortData);
+    read16(I2Cx, 0xAE, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.ac3 = (int16_t)unsignedShortData;
 
-    read16(0xB0, &unsignedShortData);
+    read16(I2Cx, 0xB0, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.ac4 = unsignedShortData;
 
-    read16(0xB2, &unsignedShortData);
+    read16(I2Cx, 0xB2, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.ac5 = unsignedShortData;
 
-    read16(0xB4, &unsignedShortData);
+    read16(I2Cx, 0xB4, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.ac6 = unsignedShortData;
 
-    read16(0xB6, &unsignedShortData);
+    read16(I2Cx, 0xB6, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.b1 = (int16_t)unsignedShortData;
 
-    read16(0xB8, &unsignedShortData);
+    read16(I2Cx, 0xB8, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.b2 = (int16_t)unsignedShortData;
 
-    read16(0xBA, &unsignedShortData);
+    read16(I2Cx, 0xBA, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.mb = (int16_t)unsignedShortData;
 
-    read16(0xBC, &unsignedShortData);
+    read16(I2Cx, 0xBC, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.mc = (int16_t)unsignedShortData;
 
-    read16(0xBE, &unsignedShortData);
+    read16(I2Cx, 0xBE, &unsignedShortData);
     for(i=0;i<480;i++);
     sensorX->calib_param.md = (int16_t)unsignedShortData;
 

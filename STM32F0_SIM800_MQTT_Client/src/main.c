@@ -87,8 +87,7 @@ int main(void)
  //   servoInit();
 
     debugSend("\n----begin----\n");
-
-   /* simSend("AT+CPOWD=1");
+    simSend("AT+CPOWD=1");
     delayMilliIT(500);
     GPIO_ResetBits(GPIOA, GPIO_Pin_5);
     delayMilliIT(2500);
@@ -99,45 +98,65 @@ int main(void)
     simNoEcho();
     delayMilliIT(20);
     initGPS();///only AFTER SIM808 has turned on
-*/
+
     #if BMP180_ATTACHED
     /** \name Check Barometer */
-    bmp180_get_calib_param(&Sensor1);
+    //bmp180_get_calib_param(I2C1, &Sensor1);
+    bmp180_get_calib_param(I2C2, &Sensor2);
     #endif
 
 
     while(1)
     {
+
+
+
         servo_DeInit();
         HCSR04_Init();
-        delayMilli(20);
         HCSR04_Read(&UltrasonicSensor);
-        delayMilli(300);
+        delayMilli(2);
         _printfLngU("Main: ", UltrasonicSensor.Distance);
 
-
-        delayMilliIT(500);
-        HCSR04_DeInit();
         servoInit();
-   //     servoDown();
-        delayMilliIT(2000);
+        servoDown();
+        delayMilliIT(1500);
 
-       /* simBatteryCheck(&sim808);
+        servo_DeInit();
+        HCSR04_Init();
+        HCSR04_Read(&UltrasonicSensor);
+        delayMilli(2);
+        _printfLngU("Main: ", UltrasonicSensor.Distance);
+
+        servoInit();
+        servoNone();
+        delayMilliIT(1500);
+
+        servo_DeInit();
+        HCSR04_Init();
+        HCSR04_Read(&UltrasonicSensor);
+        delayMilli(2);
+        _printfLngU("Main: ", UltrasonicSensor.Distance);
+
+        servoInit();
+        servoUp();
+        delayMilliIT(1500);
+
+        simBatteryCheck(&sim808);
         simGPSInfo(&sim808);
         delayMilliIT(500);
         simGPSStatus(&sim808);
         delayMilliIT(500);
-        pressure1 = pressureAverage(&Sensor1);
-
+        //pressure1 = pressureAverage(I2C1, &Sensor1);
+        pressure2 = pressureAverage(I2C2, &Sensor2);
         sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat, sim808.time);
         debugSend(strtosend);
         debugSend("\n");
         sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
         debugSend(strtosend);
         debugSend("\n");
-        sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%s}", (int32_t)pressure1, pressure2, "0");
+        sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", (int32_t)pressure1, pressure2, UltrasonicSensor.Distance);
         debugSend(strtosend);
-        debugSend("\n");*/
+        debugSend("\n");
         resetWatchdog();
     }
     NVIC_SystemReset();
@@ -209,7 +228,7 @@ int main(void)
             simGPSStatus(&sim808);
 
             ///Get Altitude
-            pressure1 = pressureAverage(&Sensor1);
+            pressure1 = pressureAverage(I2C1, &Sensor1);
             _printfLngS("Pressure is ", (int32_t)pressure1);
 
             ///Get Balloon Pressure
