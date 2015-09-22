@@ -11,4 +11,5 @@ obj\debug\src\main.o: src\main.c inc/stm32f0xx_conf.h \
  SPL\inc/stm32f0xx_rtc.h SPL\inc/stm32f0xx_spi.h SPL\inc/stm32f0xx_tim.h \
  SPL\inc/stm32f0xx_usart.h SPL\inc/stm32f0xx_wwdg.h \
  SPL\inc/stm32f0xx_misc.h inc/umqtt.h inc/config.h inc/umqtt.h \
- inc/Debug.h inc/SIM808.h inc/timing.h inc/servo.h inc/bmp180.h
+ inc/Debug.h inc/SIM808.h inc/timing.h inc/servo.h inc/bmp180.h \
+ inc/HCSR04.h

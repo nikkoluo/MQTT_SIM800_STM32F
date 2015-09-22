@@ -20,6 +20,7 @@
 #include "timing.h"
 #include "servo.h"
 #include "bmp180.h"
+#include "HCSR04.h"
 #define LINEMAX 50
 
 
@@ -57,7 +58,7 @@ extern char receivedDebug[200];
 
 /** \name Barometer */
 struct bmp180_t Sensor1, Sensor2;
-
+HCSR04_t UltrasonicSensor;
 //set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_OFF;
 struct sim808_t sim808;
@@ -81,11 +82,13 @@ int main(void)
     gpioInit();
     debugInit();
     simInit();
-    servoInit();
+
+    HCSR04_Init();
+ //   servoInit();
 
     debugSend("\n----begin----\n");
 
-    simSend("AT+CPOWD=1");
+   /* simSend("AT+CPOWD=1");
     delayMilliIT(500);
     GPIO_ResetBits(GPIOA, GPIO_Pin_5);
     delayMilliIT(2500);
@@ -96,17 +99,30 @@ int main(void)
     simNoEcho();
     delayMilliIT(20);
     initGPS();///only AFTER SIM808 has turned on
-
+*/
     #if BMP180_ATTACHED
     /** \name Check Barometer */
     bmp180_get_calib_param(&Sensor1);
     #endif
 
 
- /*   while(1)
+    while(1)
     {
+        servo_DeInit();
+        HCSR04_Init();
+        delayMilli(20);
+        HCSR04_Read(&UltrasonicSensor);
+        delayMilli(300);
+        _printfLngU("Main: ", UltrasonicSensor.Distance);
+
+
+        delayMilliIT(500);
+        HCSR04_DeInit();
+        servoInit();
+   //     servoDown();
         delayMilliIT(2000);
-        simBatteryCheck(&sim808);
+
+       /* simBatteryCheck(&sim808);
         simGPSInfo(&sim808);
         delayMilliIT(500);
         simGPSStatus(&sim808);
@@ -121,7 +137,7 @@ int main(void)
         debugSend("\n");
         sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%s}", (int32_t)pressure1, pressure2, "0");
         debugSend(strtosend);
-        debugSend("\n");
+        debugSend("\n");*/
         resetWatchdog();
     }
     NVIC_SystemReset();
@@ -373,6 +389,7 @@ void recievePacket(void)
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
             while(1)
             {
+                simSend("AT+CPOWD=1");
                 debugSend("- - - QUIT OPERATIONS and DISCONNECT\n");
                 delayMilliIT(2000);
             }

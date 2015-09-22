@@ -11,10 +11,7 @@ void servoSet(uint16_t nsOnTime);
 /* Private functions ---------------------------------------------------------*/
 void servoInit()
 {
-
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-
-
 
     TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
     TIM_TimeBaseInitStruct.TIM_Prescaler = 120;
@@ -35,7 +32,23 @@ void servoInit()
     TIM_CtrlPWMOutputs(TIM2, ENABLE);
     servoNone();
 }
+void servo_DeInit()
+{
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, DISABLE);
+    TIM_Cmd(TIM2, DISABLE);
+    TIM_DeInit(TIM2);
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStruct;
+    TIM_TimeBaseStructInit(&TIM_TimeBaseInitStruct);
+    TIM_TimeBaseInit(TIM2, &TIM_TimeBaseInitStruct);
 
+    TIM_OCInitTypeDef TIM_OCInitStruct;
+    TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_Inactive;
+    TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Disable;
+    TIM_OCInitStruct.TIM_Pulse = 0;
+    TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low;
+    TIM_OC1Init(TIM2, &TIM_OCInitStruct);
+    TIM_CtrlPWMOutputs(TIM2, DISABLE);
+}
 void servoSet(uint16_t nsOnTime)
 {
     TIM2->CCR1 = nsOnTime*0.4;
