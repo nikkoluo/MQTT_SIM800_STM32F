@@ -43,6 +43,7 @@ struct sim808_t {
 void simInit(void);
 void simSend(const char* data);
 void simTransmit(char * stringToSend, uint16_t length);
+void simTransmitNoACK(char * stringToSend, uint16_t length);
 int simReceive(const uint8_t* data, uint8_t length);
 uint8_t simAvailable(void);
 

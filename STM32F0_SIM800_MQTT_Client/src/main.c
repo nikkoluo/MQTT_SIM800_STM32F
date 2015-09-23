@@ -106,9 +106,9 @@ int main(void)
     bmp180_get_calib_param(I2C2, &Sensor2);
     #endif
 
-/*
     while(1)
     {
+/*
         delayMilliIT(1000);
         checkAttached();
 
@@ -141,14 +141,12 @@ int main(void)
         servoInit();
         servoUp();
         delayMilliIT(1500);
-
+*/
         simBatteryCheck(&sim808);
         simGPSInfo(&sim808);
-        delayMilliIT(500);
         simGPSStatus(&sim808);
-        delayMilliIT(500);
         pressure1 = pressureAverage(I2C1, &Sensor1);
-        pressure2 = pressureAverage(I2C2, &Sensor2);
+        //pressure2 = pressureAverage(I2C2, &Sensor2);
         sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat, sim808.time);
         debugSend(strtosend);
         debugSend("\n");
@@ -161,7 +159,7 @@ int main(void)
         resetWatchdog();
     }
     NVIC_SystemReset();
-*/
+
 
 /** \name Check SIM808 */
     checkInitalStatus(&current_state);
@@ -195,15 +193,13 @@ int main(void)
     while(1)
     {
         resetWatchdog();
-
-
         counter++;
         if(counter>=200) counter=0;
 
         ///PING "AT"
         if(simPing()==0)
         {///IF NO PING RESPONSE THEN RESET
-            debugSend("ping-NO-response\n");
+            debugSend("\nping-NO-response");
             NVIC_SystemReset();
         }
 
@@ -211,20 +207,20 @@ int main(void)
 
         if(current_state!=STATE_CONNECTED)
         {
-            debugSend("connection no longer alive\n");
+            debugSend("\nconnection no longer alive");
             NVIC_SystemReset();
         }
         ///Receive any subscribed packets
         recievePacket();
-        if(counter%4==0)
+        //if(counter%4==0)
         {
             ///Get Altitude
             pressure1 = pressureAverage(I2C1, &Sensor1);
-            _printfLngS("Atmospheric Pressure is ", (int32_t)pressure1);
-
+            _printfLngS("\nAtmospheric Pressure is ", (int32_t)pressure1);
+            delayMilliIT(10);
             ///Get Balloon Pressure
             pressure2 = pressureAverage(I2C2, &Sensor2);
-            _printfLngS("Balloon Pressure is ", (int32_t)pressure2);
+            _printfLngS("\nBalloon Pressure is ", (int32_t)pressure2);
 
         }
 
@@ -260,10 +256,12 @@ int main(void)
             sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", pressure1, pressure2, UltrasonicSensor.Distance);
             umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+            delayMilliIT(5);
         }
 
-        if(counter%25==0)
+        //if(counter%25==0)
         {
+            delayMilliIT(5);
             ///Get Battery Percentage
             simBatteryCheck(&sim808);
             debugSend("Batt check done: ");

@@ -61,7 +61,7 @@ int32_t pressureAverage(I2C_TypeDef* I2Cx, struct bmp180_t* sensorX)
   // Note that using the equation from wikipedia can give bad results
   // at high altitude.  See this thread for more information:
   //  http://forums.adafruit.com/viewtopic.php?f=22&t=58064
-    for(i=0; i<20; i++)
+    for(i=0; i<10; i++)
     {
 
         getPressure(I2Cx, &pressure, &tempSensor);
@@ -70,7 +70,7 @@ int32_t pressureAverage(I2C_TypeDef* I2Cx, struct bmp180_t* sensorX)
         #endif
         avgPressure+=pressure;
     }
-    avgPressure=avgPressure/20;
+    avgPressure=avgPressure/10;
     #if BMPVERBOSE2
     _printfLngS("avgPressure ", avgPressure);
     #endif
@@ -156,7 +156,7 @@ void readRawPressure(I2C_TypeDef* I2Cx, int32_t *pressure, uint8_t oss)
     #if BMPVERBOSE
     _printfU("still good:",1);
     #endif
-    for(i=0; i<100000; i++) ;//delay
+    for(i=0; i<90000; i++) ;//delay
     #if BMPVERBOSE
     _printfU("still good:",2);
     #endif

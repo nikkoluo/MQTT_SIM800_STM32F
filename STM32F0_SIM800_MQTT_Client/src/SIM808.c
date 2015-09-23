@@ -96,12 +96,23 @@ void simTransmit(char * stringToSend, uint16_t length)
     if(strstr(rxBuf, "ERROR") != NULL)
     {
         debugSend(" send acknowledge not received");
-        NVIC_SystemReset();
     }
 
 
 }
 
+void simTransmitNoACK(char * stringToSend, uint16_t length)
+{
+    char sendStr[20];
+    uint8_t ready=0, error=0, transmitSuccess=0;
+    uint16_t i;
+    sprintf(sendStr, "AT+CIPSEND=%u", length);
+    flushReceiveBuffer();
+    simSend(sendStr);
+
+    debugSend("No ACK \n");
+
+}
 
 
 void flushReceiveBuffer()
@@ -299,7 +310,7 @@ void initGPS()
 {
     simGPSStart();
 
-    delayMilliIT(2000);
+    delayMilliIT(2500);
     simGPSRestartCold();
 }
 void simGPSInfo(struct sim808_t * sim808)
@@ -530,12 +541,12 @@ void checkInitalStatus(tcp_state* current_state)
 ///CHECK STATUS OF SIM
     if(simPing())
     {///IF SUCCCESS THEN TEST NETWORK REGISTRATION
-        debugSend("ping-resp\n");
+        debugSend("ping-response\n");
         current_state = STATE_ON;
     }
     else
     {///IF NO PING RESPONSE THEN ??
-        debugSend("ping-NO-resp\n");
+        debugSend("ping-NO-response\n");
         NVIC_SystemReset();
     }
     if(simNoEcho()==0)
