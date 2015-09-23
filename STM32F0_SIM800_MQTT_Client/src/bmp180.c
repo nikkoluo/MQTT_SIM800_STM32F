@@ -241,14 +241,16 @@ _printfLngS("B5: ", b5);
 void checkAttached(void)
 {
     uint8_t deviceID=0;
-    read8(I2C1, 0xD0, &deviceID);
+    read8(I2C2, 0xD0, &deviceID);
     if (deviceID==0)
     {
         #define BMP180_ATTACHED 0
+        debugSend("Not Attached");
     }
     else
     {
         #define BMP180_ATTACHED 1
+        debugSend("Attached");
     }
 }
 

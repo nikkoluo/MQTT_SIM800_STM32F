@@ -223,7 +223,7 @@ void simBatteryCheck(struct sim808_t * sim808)
     }
     if(rxBufLen>0)
     {
-        debugSend(rxBuf);
+        //debugSend(rxBuf);
         /**
 
         +CBC: 0,75,4004
@@ -311,7 +311,7 @@ void simGPSInfo(struct sim808_t * sim808)
     delayMilliIT(30);
     if(rxBufLen>0)
     {
-        debugSend(rxBuf);
+        //debugSend(rxBuf);
         /**
 
         +CGPSINF: 0,8960.000000,0.000000,137.000000,19800106000110.000,0,0,0.000000,0.000000
@@ -354,7 +354,7 @@ void simGPSStatus(struct sim808_t * sim808)
     }
     if(rxBufLen>0)
     {
-        debugSend(rxBuf);
+        //debugSend(rxBuf);
         /**
 
         +CGPSSTATUS: Location 3D Fix

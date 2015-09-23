@@ -82,9 +82,10 @@ int main(void)
     gpioInit();
     debugInit();
     simInit();
+    I2CInit();
 
     HCSR04_Init();
- //   servoInit();
+    servoInit();
 
     debugSend("\n----begin----\n");
     simSend("AT+CPOWD=1");
@@ -101,15 +102,15 @@ int main(void)
 
     #if BMP180_ATTACHED
     /** \name Check Barometer */
-    //bmp180_get_calib_param(I2C1, &Sensor1);
+    bmp180_get_calib_param(I2C1, &Sensor1);
     bmp180_get_calib_param(I2C2, &Sensor2);
     #endif
 
-
+/*
     while(1)
     {
-
-
+        delayMilliIT(1000);
+        checkAttached();
 
         servo_DeInit();
         HCSR04_Init();
@@ -146,7 +147,7 @@ int main(void)
         delayMilliIT(500);
         simGPSStatus(&sim808);
         delayMilliIT(500);
-        //pressure1 = pressureAverage(I2C1, &Sensor1);
+        pressure1 = pressureAverage(I2C1, &Sensor1);
         pressure2 = pressureAverage(I2C2, &Sensor2);
         sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat, sim808.time);
         debugSend(strtosend);
@@ -160,7 +161,7 @@ int main(void)
         resetWatchdog();
     }
     NVIC_SystemReset();
-
+*/
 
 /** \name Check SIM808 */
     checkInitalStatus(&current_state);
@@ -195,7 +196,6 @@ int main(void)
     {
         resetWatchdog();
 
-        delayMilliIT(100);//why? i dont know..
 
         counter++;
         if(counter>=200) counter=0;
@@ -216,29 +216,36 @@ int main(void)
         }
         ///Receive any subscribed packets
         recievePacket();
-        if(counter%25==0)
+        if(counter%4==0)
         {
-            ///Get Battery Percentage
-            simBatteryCheck(&sim808);
-            debugSend("Batt check done: ");
-            debugSend2(sim808.batteryPercentage, 2);
-            debugSend("\n");
+            ///Get Altitude
+            pressure1 = pressureAverage(I2C1, &Sensor1);
+            _printfLngS("Atmospheric Pressure is ", (int32_t)pressure1);
+
+            ///Get Balloon Pressure
+            pressure2 = pressureAverage(I2C2, &Sensor2);
+            _printfLngS("Balloon Pressure is ", (int32_t)pressure2);
+
+        }
+
             ///Get GPS Coords
             simGPSInfo(&sim808);
             simGPSStatus(&sim808);
 
-            ///Get Altitude
-            pressure1 = pressureAverage(I2C1, &Sensor1);
-            _printfLngS("Pressure is ", (int32_t)pressure1);
+            ///Get Ultrasonic Distance
+            /**Must deinitalise the Servo because it uses TIM2 also.*/
+            servo_DeInit();
+            HCSR04_Init();
+            HCSR04_Read(&UltrasonicSensor);
+            delayMilli(2);
+            /**Re-activate the servo TIM2*/
+            servoInit();
 
-            ///Get Balloon Pressure
-            //getPressure(&pressure2, &Sensor2);
-            //_printfLngS("Balloon Pressure is ", (int32_t)pressure2);
-        }
+            //_printfLngU("Ultrasonic Distance: ", UltrasonicSensor.Distance);
+
         ///MQTT Tranmit packet
-        if(counter%25==0)
+        //if(counter%2==0)
         {
-
             debugSend("\n-transmit1-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
@@ -246,21 +253,33 @@ int main(void)
             umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
 
-            delayMilliIT(20);
+            delayMilliIT(5);
             debugSend("\n-transmit2-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%s}", pressure1, pressure1, "0");
+            sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", pressure1, pressure2, UltrasonicSensor.Distance);
             umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+        }
 
-            delayMilliIT(20);
+        if(counter%25==0)
+        {
+            ///Get Battery Percentage
+            simBatteryCheck(&sim808);
+            debugSend("Batt check done: ");
+            debugSend2(sim808.batteryPercentage, 2);
+            debugSend("\n");
+
             debugSend("\n-transmit3-");
             mqtt.txbuff.pointer= mqtt.txbuff.start;
             mqtt.txbuff.datalen=0;
             sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
             umqtt_publish(&mqtt, "test/data", strtosend, strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+
+
+            /**Set servo to neutral */
+            servoNone();
         }
     }
 }
