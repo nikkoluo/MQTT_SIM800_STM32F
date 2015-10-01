@@ -84,7 +84,6 @@ int main(void)
     simInit();
     I2CInit();
 
-    HCSR04_Init();
     servoInit();
 
     debugSend("\n----begin----\n");
@@ -103,45 +102,26 @@ int main(void)
     #if BMP180_ATTACHED
     /** \name Check Barometer */
     bmp180_get_calib_param(I2C1, &Sensor1);
-    bmp180_get_calib_param(I2C2, &Sensor2);
+    //bmp180_get_calib_param(I2C2, &Sensor2);
     #endif
 
     while(1)
     {
-/*
+
         delayMilliIT(1000);
-        checkAttached();
+        //checkAttached();
+        debugSend("Down");
 
-        servo_DeInit();
-        HCSR04_Init();
-        HCSR04_Read(&UltrasonicSensor);
-        delayMilli(2);
-        _printfLngU("Main: ", UltrasonicSensor.Distance);
-
-        servoInit();
         servoDown();
         delayMilliIT(1500);
+        debugSend("None");
 
-        servo_DeInit();
-        HCSR04_Init();
-        HCSR04_Read(&UltrasonicSensor);
-        delayMilli(2);
-        _printfLngU("Main: ", UltrasonicSensor.Distance);
-
-        servoInit();
         servoNone();
         delayMilliIT(1500);
-
-        servo_DeInit();
-        HCSR04_Init();
-        HCSR04_Read(&UltrasonicSensor);
-        delayMilli(2);
-        _printfLngU("Main: ", UltrasonicSensor.Distance);
-
-        servoInit();
+        debugSend("Up");
         servoUp();
         delayMilliIT(1500);
-*/
+/*
         simBatteryCheck(&sim808);
         simGPSInfo(&sim808);
         simGPSStatus(&sim808);
@@ -155,7 +135,7 @@ int main(void)
         debugSend("\n");
         sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", (int32_t)pressure1, pressure2, UltrasonicSensor.Distance);
         debugSend(strtosend);
-        debugSend("\n");
+        debugSend("\n");*/
         resetWatchdog();
     }
     NVIC_SystemReset();

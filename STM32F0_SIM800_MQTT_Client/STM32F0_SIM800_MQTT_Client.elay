@@ -123,7 +123,7 @@
 	</File>
 	<File name="inc\SIM808.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="1176" topLine="19" />
+			<Cursor1 position="1068" topLine="17" />
 		</Cursor>
 	</File>
 	<File name="inc\config.h" open="0" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -173,23 +173,23 @@
 	</File>
 	<File name="src\SIM808.c" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="2454" topLine="35" />
+			<Cursor1 position="3026" topLine="48" />
 		</Cursor>
 		<Folding>
 			<Collapse line="28" />
 			<Collapse line="50" />
 			<Collapse line="62" />
-			<Collapse line="166" />
+			<Collapse line="148" />
 		</Folding>
 	</File>
 	<File name="src\bmp180.c" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="5068" topLine="131" />
+			<Cursor1 position="7411" topLine="223" />
 		</Cursor>
 	</File>
-	<File name="src\main.c" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\main.c" open="1" top="1" tabpos="4" split="0" active="1" splitpos="0" zoom_1="-2" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="3419" topLine="128" />
+			<Cursor1 position="11486" topLine="369" />
 		</Cursor>
 	</File>
 	<File name="src\servo.c" open="0" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
@@ -197,7 +197,7 @@
 			<Cursor1 position="2951" topLine="3" />
 		</Cursor>
 	</File>
-	<File name="src\startup_stm32f0xx.S" open="1" top="1" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="src\startup_stm32f0xx.S" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="6141" topLine="126" />
 		</Cursor>
