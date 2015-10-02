@@ -83,7 +83,7 @@ void servoUp()
 
 void servoDown()
 {
-    servoSet(1545);
+    servoSet(1535);
 }
 
 

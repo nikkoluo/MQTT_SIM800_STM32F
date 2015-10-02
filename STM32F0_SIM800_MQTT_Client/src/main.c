@@ -68,7 +68,7 @@ int main(void)
     uint8_t flagNetReg=0, flagAlive=0, strtosend[40];
     uint16_t index=0;
     double lng, lat;
-    uint8_t data1, data2;
+    uint8_t data1, data2, waterLevel = 0;
     static int32_t pressure1=0, pressure2 =0;
     char latCoord[20], longCoord[20];
 /** Initialise functions
@@ -102,12 +102,13 @@ int main(void)
     #if BMP180_ATTACHED
     /** \name Check Barometer */
     bmp180_get_calib_param(I2C1, &Sensor1);
-    //bmp180_get_calib_param(I2C2, &Sensor2);
+    bmp180_get_calib_param(I2C2, &Sensor2);
     #endif
 
     while(1)
     {
-
+        waterLevel = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6);
+        _printfU("Water Level ", waterLevel);
         delayMilliIT(1000);
         //checkAttached();
         debugSend("Down");
@@ -121,12 +122,23 @@ int main(void)
         debugSend("Up");
         servoUp();
         delayMilliIT(1500);
-/*
+
+        debugSend("Drop");
+        servoDrop();
+        delayMilliIT(1500);
+
         simBatteryCheck(&sim808);
         simGPSInfo(&sim808);
         simGPSStatus(&sim808);
         pressure1 = pressureAverage(I2C1, &Sensor1);
-        //pressure2 = pressureAverage(I2C2, &Sensor2);
+        pressure2 = pressureAverage(I2C2, &Sensor2);
+        servo_DeInit();
+        HCSR04_Init();
+        HCSR04_Read(&UltrasonicSensor);
+        delayMilli(2);
+        /**Re-activate the servo TIM2*/
+        servoInit();
+
         sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat, sim808.time);
         debugSend(strtosend);
         debugSend("\n");
@@ -135,7 +147,7 @@ int main(void)
         debugSend("\n");
         sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", (int32_t)pressure1, pressure2, UltrasonicSensor.Distance);
         debugSend(strtosend);
-        debugSend("\n");*/
+        debugSend("\n");
         resetWatchdog();
     }
     NVIC_SystemReset();
@@ -172,6 +184,7 @@ int main(void)
 
     while(1)
     {
+        delayMilliIT(100);
         resetWatchdog();
         counter++;
         if(counter>=200) counter=0;
@@ -199,15 +212,15 @@ int main(void)
             _printfLngS("\nAtmospheric Pressure is ", (int32_t)pressure1);
             delayMilliIT(10);
             ///Get Balloon Pressure
-            pressure2 = pressureAverage(I2C2, &Sensor2);
+ //           pressure2 = pressureAverage(I2C2, &Sensor2);
             _printfLngS("\nBalloon Pressure is ", (int32_t)pressure2);
 
         }
-
+            debugSend("getting GPS");
             ///Get GPS Coords
             simGPSInfo(&sim808);
             simGPSStatus(&sim808);
-
+            debugSend("got GPS");
             ///Get Ultrasonic Distance
             /**Must deinitalise the Servo because it uses TIM2 also.*/
             servo_DeInit();
@@ -271,7 +284,7 @@ void gpioInit()
      * PA3 - RX2 - to SIM TX
      * PA4 -
      * PA5 - SIM Power
-     * PA6 - Test pad
+     * PA6 - Water Level
      * PA7 - Test pad
      * PA8 -
      * PA9  - TX1 - debug
@@ -300,11 +313,17 @@ void gpioInit()
         GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.GPIO_Pin =GPIO_Pin_5|GPIO_Pin_6|GPIO_Pin_7;
+    GPIO_InitStruct.GPIO_Pin =GPIO_Pin_5|GPIO_Pin_7;
     GPIO_InitStruct.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
     GPIO_InitStruct.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.GPIO_Pin =GPIO_Pin_6;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_10MHz;
+    GPIO_InitStruct.GPIO_PuPd = GPIO_PuPd_DOWN;
     GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     ///PORT B
