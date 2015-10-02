@@ -10,5 +10,5 @@
 void debugInit(void);
 void debugSend(char StringToSend[]);
 void debugSend2(char StringToSend[], int len);
-void debugReceive();
+char debugReceive();
 #endif /* DEBUG_H_INCLUDED */

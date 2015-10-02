@@ -6,7 +6,7 @@
 /**\name	DEBUGGING ENABLER       */
 /***************************************************************/
 #define BMPVERBOSE 0
-#define BMPVERBOSE2 1
+#define BMPVERBOSE2 0
 
 /***************************************************************/
 /**\name	I2C ADDRESS DEFINITION OF BMP180       */

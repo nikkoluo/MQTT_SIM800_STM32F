@@ -12,7 +12,7 @@
 
 
 char receivedDebug[200];
-unsigned char receivedDebugLen;
+uint16_t receivedDebugLen;
 
 void debugInit(void)
 {
@@ -72,9 +72,17 @@ void debugFlushRx(void)
     for(i=0; i<50; i++) receivedDebug[i]=0;//flush buffer
     receivedDebugLen=0;
 }
-void debugReceive()
+char debugReceive()
 {
-
+    if(receivedDebugLen>0)
+    {
+        delayMilliIT(1);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 void USART1_IRQHandler (void)
 {

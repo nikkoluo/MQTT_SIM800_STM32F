@@ -10,6 +10,8 @@
    Last changed date:  21-09-2015
 
 **********************************************************************/
+
+/**INCLUDES*/
 #include "stm32f0xx_conf.h"
 #include <stdio.h>
 #include <string.h>
@@ -21,17 +23,15 @@
 #include "servo.h"
 #include "bmp180.h"
 #include "HCSR04.h"
+
+
+/**DEFINES*/
 #define LINEMAX 50
-
-
-
 #define umqtt_build_header(type, dup, qos, retain) \
 	(((type) << 4) | ((dup) << 3) | ((qos) << 1) | (retain))
-
 #define MAINVERBOSE 1
 
-
-
+/**PUBLIC VARIABLES*/\
 char *connackAccept = {0x20, 0x02, 0,0};
 char *subscribeAccept={0x90, 0x03};
 extern uint8_t msgTimout;
@@ -55,22 +55,29 @@ char rxData [300];
 extern char rxBuf[300];
 extern uint16_t rxBufLen;
 extern char receivedDebug[200];
+extern uint16_t receivedDebugLen;
 
-/** \name Barometer */
-struct bmp180_t Sensor1, Sensor2;
-HCSR04_t UltrasonicSensor;
+static struct bmp180_t Sensor1, Sensor2;
+static HCSR04_t UltrasonicSensor;
 //set to off if you dont want to activate the sim808
 tcp_state current_state = STATE_OFF;
-struct sim808_t sim808;
+static struct sim808_t sim808;
 
+/**PRIVATE FUNCTIONS*/
+void receiveUARTCommand();
+
+
+/**MAIN PROGRAM*/
 int main(void)
 {
+    /**PRIVATE VARIABLES*/
     uint8_t flagNetReg=0, flagAlive=0, strtosend[40];
     uint16_t index=0;
     double lng, lat;
     uint8_t data1, data2, waterLevel = 0;
     static int32_t pressure1=0, pressure2 =0;
     char latCoord[20], longCoord[20];
+    static uint8_t loopCounter=0;
 /** Initialise functions
 ***************************
 *   initTiming
@@ -83,9 +90,9 @@ int main(void)
     debugInit();
     simInit();
     I2CInit();
-
     servoInit();
 
+/**START THE SIM808*/
     debugSend("\n----begin----\n");
     simSend("AT+CPOWD=1");
     delayMilliIT(500);
@@ -97,60 +104,105 @@ int main(void)
 
     simNoEcho();
     delayMilliIT(20);
+
+/**START THE GPS*/
     initGPS();///only AFTER SIM808 has turned on
 
-    #if BMP180_ATTACHED
-    /** \name Check Barometer */
+/**GET CONFIG DATA FROM PRESSURE SENSORS*/
     bmp180_get_calib_param(I2C1, &Sensor1);
     bmp180_get_calib_param(I2C2, &Sensor2);
-    #endif
-
-    while(1)
+  /*  while(1)
     {
+        delayMilliIT(20);
+        resetWatchdog();
+        loopCounter++;
+        _printfU("\nLoop Counter: ", loopCounter);
+        if(loopCounter>=200) loopCounter=0;
+        ///PING "AT"
+        if(simPing()==0)
+        {///IF NO PING RESPONSE THEN RESET
+            debugSend("\nping-NO-response");
+            NVIC_SystemReset();
+        }
+
+        simUpdateState(&current_state);
+
+        if(current_state!=STATE_CONNECTED)
+        {
+            debugSend("\nconnection no longer alive");
+            //NVIC_SystemReset();
+        }
+        ///Receive any subscribed packets
+        //recievePacket();
+        receiveUARTCommand();
+
+
+        ///Read Water Level
         waterLevel = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6);
         _printfU("Water Level ", waterLevel);
-        delayMilliIT(1000);
-        //checkAttached();
-        debugSend("Down");
 
-        servoDown();
-        delayMilliIT(1500);
-        debugSend("None");
 
-        servoNone();
-        delayMilliIT(1500);
-        debugSend("Up");
-        servoUp();
-        delayMilliIT(1500);
+        ///Get Atmospheric Pressure
+        pressure1 = pressureAverage(I2C1, &Sensor1);
+        //_printfLngS("\nAtmospheric Pressure is ", (int32_t)pressure1);
 
-        debugSend("Drop");
-        servoDrop();
-        delayMilliIT(1500);
-
-        simBatteryCheck(&sim808);
+        ///Get GPS Coords
         simGPSInfo(&sim808);
         simGPSStatus(&sim808);
-        pressure1 = pressureAverage(I2C1, &Sensor1);
-        pressure2 = pressureAverage(I2C2, &Sensor2);
+        ///Get Ultrasonic Distance
+
         servo_DeInit();
         HCSR04_Init();
         HCSR04_Read(&UltrasonicSensor);
         delayMilli(2);
-        /**Re-activate the servo TIM2*/
-        servoInit();
 
-        sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":%sx,\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, sim808.numSat, sim808.time);
-        debugSend(strtosend);
-        debugSend("\n");
-        sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
-        debugSend(strtosend);
-        debugSend("\n");
-        sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", (int32_t)pressure1, pressure2, UltrasonicSensor.Distance);
-        debugSend(strtosend);
-        debugSend("\n");
-        resetWatchdog();
+        servoInit();
+        //_printfLngU("Ultrasonic Distance: ", UltrasonicSensor.Distance);
+
+    ///MQTT Tranmit packet
+
+        debugSend("\n-transmit1-");
+        mqtt.txbuff.pointer= mqtt.txbuff.start;
+        mqtt.txbuff.datalen=0;
+        sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":\"%sx\",\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, "0", sim808.time);
+        umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
+        debugSend2(strtosend,strlen(strtosend));
+        //simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+        debugSend("\n-transmit2-");
+        mqtt.txbuff.pointer= mqtt.txbuff.start;
+        mqtt.txbuff.datalen=0;
+        sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", pressure1, pressure2, UltrasonicSensor.Distance);
+        umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
+        debugSend2(strtosend,strlen(strtosend));
+        //simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+
+
+        if(loopCounter%10==0)
+        {
+            ///Get Balloon Pressure
+            pressure2 = pressureAverage(I2C2, &Sensor2);
+            _printfLngS("\nBalloon Pressure is ", (int32_t)pressure2);
+            ///Get Battery Percentage
+            simBatteryCheck(&sim808);
+            debugSend("Batt check done: ");
+            debugSend2(sim808.batteryPercentage, 2);
+            debugSend("\n");
+
+            debugSend("\n-transmit3-");
+            mqtt.txbuff.pointer= mqtt.txbuff.start;
+            mqtt.txbuff.datalen=0;
+            sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
+            umqtt_publish(&mqtt, "test/data", strtosend, strlen(strtosend));
+            debugSend2(strtosend,strlen(strtosend));
+            //simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+        }
+
+
+        if(loopCounter%15==0)
+            servoNone();
+
     }
-    NVIC_SystemReset();
+    NVIC_SystemReset();*/
 
 
 /** \name Check SIM808 */
@@ -180,15 +232,15 @@ int main(void)
     umqtt_subscribe(&mqtt, "test/action");
     simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
     recievePacket();
-    uint8_t counter=0;
+
 
     while(1)
     {
-        delayMilliIT(100);
+        delayMilliIT(20);
         resetWatchdog();
-        counter++;
-        if(counter>=200) counter=0;
-
+        loopCounter++;
+        _printfU("\nLoop Counter: ", loopCounter);
+        if(loopCounter>=200) loopCounter=0;
         ///PING "AT"
         if(simPing()==0)
         {///IF NO PING RESPONSE THEN RESET
@@ -205,56 +257,55 @@ int main(void)
         }
         ///Receive any subscribed packets
         recievePacket();
-        //if(counter%4==0)
+        //receiveUARTCommand();
+
+
+        ///Read Water Level
+        waterLevel = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6);
+        _printfU("Water Level ", waterLevel);
+
+
+        ///Get Atmospheric Pressure
+        pressure1 = pressureAverage(I2C1, &Sensor1);
+        //_printfLngS("\nAtmospheric Pressure is ", (int32_t)pressure1);
+
+        ///Get GPS Coords
+        simGPSInfo(&sim808);
+        simGPSStatus(&sim808);
+        ///Get Ultrasonic Distance
+        /**Must deinitalise the Servo because it uses TIM2 also.*/
+        servo_DeInit();
+        HCSR04_Init();
+        HCSR04_Read(&UltrasonicSensor);
+        delayMilli(2);
+        /**Re-activate the servo TIM2*/
+        servoInit();
+        //_printfLngU("Ultrasonic Distance: ", UltrasonicSensor.Distance);
+
+    ///MQTT Tranmit packet
+
+        debugSend("\n-transmit1-");
+        mqtt.txbuff.pointer= mqtt.txbuff.start;
+        mqtt.txbuff.datalen=0;
+        sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":\"%sx\",\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, "0", sim808.time);
+        umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
+        debugSend2(strtosend,strlen(strtosend));
+        simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+        debugSend("\n-transmit2-");
+        mqtt.txbuff.pointer= mqtt.txbuff.start;
+        mqtt.txbuff.datalen=0;
+        sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", pressure1, pressure2, UltrasonicSensor.Distance);
+        umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
+        debugSend2(strtosend,strlen(strtosend));
+        simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
+
+
+        /**THIS DATA DOESNT NEED TO BE SENT AS OFTEN*/
+        if(loopCounter%10==0)
         {
-            ///Get Altitude
-            pressure1 = pressureAverage(I2C1, &Sensor1);
-            _printfLngS("\nAtmospheric Pressure is ", (int32_t)pressure1);
-            delayMilliIT(10);
             ///Get Balloon Pressure
- //           pressure2 = pressureAverage(I2C2, &Sensor2);
+            pressure2 = pressureAverage(I2C2, &Sensor2);
             _printfLngS("\nBalloon Pressure is ", (int32_t)pressure2);
-
-        }
-            debugSend("getting GPS");
-            ///Get GPS Coords
-            simGPSInfo(&sim808);
-            simGPSStatus(&sim808);
-            debugSend("got GPS");
-            ///Get Ultrasonic Distance
-            /**Must deinitalise the Servo because it uses TIM2 also.*/
-            servo_DeInit();
-            HCSR04_Init();
-            HCSR04_Read(&UltrasonicSensor);
-            delayMilli(2);
-            /**Re-activate the servo TIM2*/
-            servoInit();
-
-            //_printfLngU("Ultrasonic Distance: ", UltrasonicSensor.Distance);
-
-        ///MQTT Tranmit packet
-        //if(counter%2==0)
-        {
-            debugSend("\n-transmit1-");
-            mqtt.txbuff.pointer= mqtt.txbuff.start;
-            mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "{\"lng\":%s,\"lat\":%s,\"fix\":\"%sx\",\"numSat\":%s,\"time\":%s}", sim808.longitudeCoord, sim808.latitudeCoord, sim808.fixStatus, "0", sim808.time);
-            umqtt_publish(&mqtt, "test/gps", strtosend, strlen(strtosend));
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-
-            delayMilliIT(5);
-            debugSend("\n-transmit2-");
-            mqtt.txbuff.pointer= mqtt.txbuff.start;
-            mqtt.txbuff.datalen=0;
-            sprintf(strtosend, "{\"pressure1\":%d,\"pressure2\":%d,\"ultrasonic\":%d}", pressure1, pressure2, UltrasonicSensor.Distance);
-            umqtt_publish(&mqtt, "test/sensor", strtosend, strlen(strtosend));
-            simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-            delayMilliIT(5);
-        }
-
-        //if(counter%25==0)
-        {
-            delayMilliIT(5);
             ///Get Battery Percentage
             simBatteryCheck(&sim808);
             debugSend("Batt check done: ");
@@ -266,12 +317,13 @@ int main(void)
             mqtt.txbuff.datalen=0;
             sprintf(strtosend, "{\"bat\":%s,\"chrg\":%s}", sim808.batteryPercentage, sim808.charge);
             umqtt_publish(&mqtt, "test/data", strtosend, strlen(strtosend));
+            debugSend2(strtosend,strlen(strtosend));
             simTransmit(mqtt_txbuff,mqtt.txbuff.datalen);
-
-
-            /**Set servo to neutral */
-            servoNone();
         }
+
+        /**Set servo to neutral */
+        if(loopCounter%15==0)
+            servoNone();
     }
 }
 
@@ -434,6 +486,49 @@ void recievePacket(void)
 
 }
 
+
+void receiveUARTCommand()
+{
+    uint8_t rxPacketLen=1, i, commaCount=0, commaPos[10], temp[2], mqttPacket[100];
+    ///Receive UART RX
+    if(debugReceive()==1)
+    {
+        debugSend("Packet: ");
+        debugSend(receivedDebug);
+        debugSend("\n");
+        if(receivedDebug[0]=='U')
+        {
+            servoUp();
+            debugSend("- - - going up\n");
+        }
+        if(receivedDebug[0]=='D')
+        {
+            debugSend("- - - going down");
+            servoDown();
+
+        }
+        if(receivedDebug[0]=='R')
+        {
+            servoDrop();
+            debugSend("- - - going drop");
+        }
+        if(receivedDebug[0]=='N')
+        {
+            servoNone();
+            debugSend("- - - neutral position\n");
+        }
+        if(receivedDebug[0]=='Q')
+        {
+            debugSend("- - - QUIT OPERATIONS and DISCONNECT\n");
+            while(1)
+            {
+                debugSend("- - - QUIT OPERATIONS and DISCONNECT\n");
+                delayMilliIT(2000);
+            }
+        }
+    }
+    debugFlushRx();
+}
 
 void parseData(char *payload, char *latitude , char *longitude, int32_t altitude, uint8_t battery)
 {

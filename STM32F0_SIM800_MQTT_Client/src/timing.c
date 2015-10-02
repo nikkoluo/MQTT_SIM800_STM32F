@@ -39,7 +39,7 @@ void TimingDelay_Decrement(void) {
 void SysTick_Handler(void) {
 	TimingDelay_Decrement();
 	if(msgTimout<20) msgTimout++;
-	if(globalTimer<100000)
+	if(globalTimer<60000)
 	{
 	    globalTimer++;
 	}
